@@ -1,4 +1,340 @@
 // ============================================================
+// ÁREAS DAS PARTITURAS
+// ============================================================
+
+function getScoreAreas() {
+  const totalWidth =
+    width -
+    SCORE_LAYOUT.marginX * 2 -
+    SCORE_LAYOUT.gap;
+
+  const scoreWidth =
+    totalWidth / 2;
+
+  return {
+    left: {
+      x: SCORE_LAYOUT.marginX,
+      y: SCORE_LAYOUT.top,
+      width: scoreWidth,
+      height:
+        SCORE_LAYOUT.bottom -
+        SCORE_LAYOUT.top
+    },
+
+    right: {
+      x:
+        SCORE_LAYOUT.marginX +
+        scoreWidth +
+        SCORE_LAYOUT.gap,
+
+      y: SCORE_LAYOUT.top,
+      width: scoreWidth,
+      height:
+        SCORE_LAYOUT.bottom -
+        SCORE_LAYOUT.top
+    }
+  };
+}
+
+function getLaneYInArea(area, lane) {
+  const index =
+    LANE_ORDER.indexOf(lane);
+
+  if (index === -1) {
+    return area.y + area.height / 2;
+  }
+
+  const spacing =
+    area.height /
+    (LANE_ORDER.length - 1);
+
+  return (
+    area.y +
+    index * spacing
+  );
+}
+
+function getXInArea(area, t) {
+  return lerp(
+    area.x,
+    area.x + area.width,
+    t
+  );
+}
+
+function drawScore(area, events, isActive) {
+  push();
+
+  // Preview mais discreto.
+  drawingContext.globalAlpha =
+    isActive ? 1.0 : 0.35;
+
+  drawScoreLabel(area, isActive);
+  drawScoreLaneGuides(area);
+  drawScoreBeatGrid(area);
+  drawScorePath(area, events);
+  drawScoreEvents(area, events);
+
+  // Só a partitura ativa tem bola.
+  if (isActive) {
+    drawScoreBall(area, events);
+  }
+
+  pop();
+}
+
+function drawScoreLabel(area, isActive) {
+  noStroke();
+
+  textAlign(LEFT, CENTER);
+  textSize(11);
+  textStyle(BOLD);
+
+  fill(isActive ? 220 : 100);
+
+  text(
+    isActive ? "ACTIVE" : "PREVIEW",
+    area.x,
+    area.y - 35
+  );
+
+  textStyle(NORMAL);
+}
+
+function drawScoreEvents(area, events) {
+  for (const event of events) {
+    const lane =
+      LANES[event.lane];
+
+    const x =
+      getXInArea(
+        area,
+        event.t
+      );
+
+    const y =
+      getLaneYInArea(
+        area,
+        event.lane
+      );
+
+    const result =
+      GAME.eventResults.get(
+        event.id
+      );
+
+    // Evento já resolvido.
+    if (result) {
+      noStroke();
+
+      fill(
+        ...lane.color,
+        45
+      );
+
+      circle(
+        x,
+        y,
+        8
+      );
+
+      continue;
+    }
+
+    // Nota ativa.
+    noStroke();
+
+    fill(
+      ...lane.color
+    );
+
+    circle(
+      x,
+      y,
+      13
+    );
+
+    // Halo.
+    noFill();
+
+    stroke(
+      ...lane.color,
+      90
+    );
+
+    circle(
+      x,
+      y,
+      19
+    );
+  }
+}
+
+function getScorePathPoints(
+  area,
+  events
+) {
+  if (events.length === 0) {
+    const centerY =
+      area.y +
+      area.height / 2;
+
+    return [
+      {
+        t: 0,
+        x: area.x,
+        y: centerY
+      },
+
+      {
+        t: 1,
+        x:
+          area.x +
+          area.width,
+        y: centerY
+      }
+    ];
+  }
+
+  const points = [];
+
+  const firstEvent =
+    events[0];
+
+  // Começa à esquerda na fila da primeira nota.
+  points.push({
+    t: 0,
+
+    x: area.x,
+
+    y:
+      getLaneYInArea(
+        area,
+        firstEvent.lane
+      )
+  });
+
+  for (const event of events) {
+    points.push({
+      t: event.t,
+
+      x:
+        getXInArea(
+          area,
+          event.t
+        ),
+
+      y:
+        getLaneYInArea(
+          area,
+          event.lane
+        )
+    });
+  }
+
+  const lastEvent =
+    events[
+      events.length - 1
+    ];
+
+  // Termina à direita na fila da última nota.
+  points.push({
+    t: 1,
+
+    x:
+      area.x +
+      area.width,
+
+    y:
+      getLaneYInArea(
+        area,
+        lastEvent.lane
+      )
+  });
+
+  return points;
+}
+
+function drawScorePath(
+  area,
+  events
+) {
+  const points =
+    getScorePathPoints(
+      area,
+      events
+    );
+
+  stroke(75);
+  strokeWeight(2);
+  noFill();
+
+  beginShape();
+
+  for (const point of points) {
+    vertex(
+      point.x,
+      point.y
+    );
+  }
+
+  endShape();
+}
+
+function drawScoreBall(
+  area,
+  events
+) {
+  const points =
+    getScorePathPoints(
+      area,
+      events
+    );
+
+  const point =
+    getPointOnTimedPath(
+      points,
+      GAME.ballPosition
+    );
+
+  noStroke();
+  fill(255);
+
+  circle(
+    point.x,
+    point.y,
+    GAME.ballDiameter
+  );
+}
+
+// ============================================================
+// DESENHO — BOLA NA PARTITURA ATIVA
+// ============================================================
+
+function drawScoreBall(area, events) {
+  const points =
+    getScorePathPoints(
+      area,
+      events
+    );
+
+  const point =
+    getPointOnTimedPath(
+      points,
+      GAME.ballPosition
+    );
+
+  noStroke();
+  fill(255);
+
+  circle(
+    point.x,
+    point.y,
+    GAME.ballDiameter
+  );
+}
+
+// ============================================================
 // GEOMETRIA DAS QUATRO FILAS
 // ============================================================
 
@@ -67,45 +403,106 @@ function getPointOnTimedPath(points, t) {
 function drawHeader() {
   const config = getCurrentLevelConfig();
 
-  fill(230);
+  // ----------------------------------------------------------
+  // TÍTULO
+  // ----------------------------------------------------------
+
   noStroke();
   textAlign(CENTER, CENTER);
-  textSize(15);
   textStyle(BOLD);
-  text("PRESS START", width / 2, 25);
+  textSize(22);
+  fill(235);
+
+  text(
+    "PRESS START",
+    width / 2,
+    28
+  );
+
+  // ----------------------------------------------------------
+  // HUD — informação do jogo numa única linha
+  // ----------------------------------------------------------
 
   textStyle(NORMAL);
   textSize(11);
-  fill(160);
-  text(`LEVEL ${GAME.level}   ·   ${config.bpm} BPM   ·   BAR ${GAME.barNumber}`, width / 2, 50);
-  text(`SCORE ${GAME.score}   ·   COMBO x${GAME.combo}   ·   BEST x${GAME.maxCombo}`, width / 2, 70);
+  fill(145);
 
-  fill(110);
-  text(GAME.state.toUpperCase(), width / 2, 91);
+  const hudY = 65;
+
+  const items = [
+    `LEVEL ${GAME.level}`,
+    `${config.bpm} BPM`,
+    `BAR ${GAME.barNumber}`,
+    `SCORE ${GAME.score}`,
+    `COMBO x${GAME.combo}`,
+    `BEST x${GAME.maxCombo}`
+  ];
+
+  // Distribuir uniformemente pela largura do ecrã.
+  const left = 90;
+  const right = width - 90;
+
+  for (let i = 0; i < items.length; i++) {
+    const x = map(
+      i,
+      0,
+      items.length - 1,
+      left,
+      right
+    );
+
+    text(
+      items[i],
+      x,
+      hudY
+    );
+  }
 }
 
 // ============================================================
 // DESENHO — FILAS
 // ============================================================
 
-function drawLaneGuides() {
-  const area = getPlayArea();
-
+function drawScoreLaneGuides(area) {
   for (const laneName of LANE_ORDER) {
-    const lane = LANES[laneName];
-    const y = getLaneY(laneName);
+    const lane =
+      LANES[laneName];
 
-    stroke(...lane.color, 35);
+    const y =
+      getLaneYInArea(
+        area,
+        laneName
+      );
+
+    stroke(
+      ...lane.color,
+      35
+    );
+
     strokeWeight(1);
-    line(area.left, y, area.right, y);
 
-    // Pequeno indicador à esquerda
+    line(
+      area.x,
+      y,
+      area.x + area.width,
+      y
+    );
+
+    // Identificador colorido à esquerda.
     noStroke();
-    fill(...lane.color);
-    rect(area.left - 25, y - 4, 12, 8);
+
+    fill(
+      ...lane.color
+    );
+
+    rect(
+      area.x - 18,
+      y - 4,
+      10,
+      8
+    );
   }
 }
-
 // ============================================================
 // DESENHO — GRELHA DE TEMPOS
 // ============================================================
@@ -152,32 +549,64 @@ function drawPath() {
 // DESENHO — NOTAS
 // ============================================================
 
-function drawEvents() {
-  const area = getPlayArea();
+function drawScoreBeatGrid(area) {
+  const config =
+    getCurrentLevelConfig();
 
-  for (const event of GAME.events) {
-    const lane = LANES[event.lane];
-    const x = lerp(area.left, area.right, event.t);
-    const y = getLaneY(event.lane);
-    const result = GAME.eventResults.get(event.id);
+  for (
+    let beat = 0;
+    beat <= config.beatsPerBar;
+    beat++
+  ) {
+    const t =
+      beat /
+      config.beatsPerBar;
 
-    // Já foi resolvida:
-    // fica muito mais discreta.
-    if (result) {
+    const x =
+      getXInArea(
+        area,
+        t
+      );
+
+    stroke(
+      beat === 0
+        ? 100
+        : 45
+    );
+
+    strokeWeight(
+      beat === 0
+        ? 2
+        : 1
+    );
+
+    line(
+      x,
+      area.y - 15,
+      x,
+      area.y + area.height + 15
+    );
+
+    if (
+      beat <
+      config.beatsPerBar
+    ) {
       noStroke();
-      fill(...lane.color, 45);
-      circle(x, y, 8);
-      continue;
+      fill(90);
+
+      textAlign(
+        CENTER,
+        CENTER
+      );
+
+      textSize(9);
+
+      text(
+        beat + 1,
+        x + 7,
+        area.y - 16
+      );
     }
-
-    noStroke();
-    fill(...lane.color);
-    circle(x, y, 13);
-
-    // halo subtil
-    noFill();
-    stroke(...lane.color, 90);
-    circle(x, y, 19);
   }
 }
 
@@ -222,4 +651,23 @@ function drawFooter() {
   textSize(10);
   fill(100);
   text("1 BLUE   2 GREEN   3 YELLOW   4 RED   ·   SPACE START/PAUSE   ·   ↑↓ LEVEL", width / 2, height - 25);
+}
+
+function drawGameArea() {
+  const areas =
+    getScoreAreas();
+
+  // Por enquanto ambos mostram
+  // exatamente o mesmo compasso.
+  drawScore(
+    areas.left,
+    GAME.events,
+    true
+  );
+
+  drawScore(
+    areas.right,
+    GAME.events,
+    false
+  );
 }

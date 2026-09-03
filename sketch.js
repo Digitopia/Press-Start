@@ -27,11 +27,9 @@ function draw() {
   updateGame();
 
   drawHeader();
-  drawBeatGrid();
-  drawLaneGuides();
-  drawPath();
-  drawEvents();
-  drawBall();
+
+  drawGameArea();
+
   drawJudgement();
   drawFooter();
 }

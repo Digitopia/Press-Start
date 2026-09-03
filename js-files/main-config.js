@@ -1,4 +1,16 @@
-const SCREEN_SIZE = { width: 540, height: 540 };
+const SCREEN_SIZE = { width: 960, height: 540 };
+
+// ============================================================
+// CONFIGURAÇÃO PARTITURAS
+// margens para configuração com getScoreAreas() - renderer,js
+// ============================================================
+
+const SCORE_LAYOUT = {
+  marginX: 50,
+  top: 150,
+  bottom: 430,
+  gap: 50
+};
 
 // ============================================================
 // JANELAS DE ACERTO

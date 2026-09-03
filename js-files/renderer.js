@@ -410,7 +410,7 @@ function drawHeader() {
   noStroke();
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
-  textSize(22);
+  textSize(18);
   fill(235);
 
   text(
@@ -424,7 +424,7 @@ function drawHeader() {
   // ----------------------------------------------------------
 
   textStyle(NORMAL);
-  textSize(11);
+  textSize(8);
   fill(145);
 
   const hudY = 65;
@@ -632,14 +632,12 @@ function drawJudgement() {
   if (GAME.judgementTimer <= 0) return;
 
   textAlign(CENTER, CENTER);
-  textStyle(BOLD);
   textSize(24);
 
   fill(...(JUDGEMENT_COLORS[GAME.lastJudgement] ?? [255, 80, 80]));
 
   text(GAME.lastJudgement, width / 2, height - 70);
 
-  textStyle(NORMAL);
 }
 
 // ============================================================
@@ -648,7 +646,7 @@ function drawJudgement() {
 
 function drawFooter() {
   textAlign(CENTER, CENTER);
-  textSize(10);
+  textSize(7);
   fill(100);
   text("1 BLUE   2 GREEN   3 YELLOW   4 RED   ·   SPACE START/PAUSE   ·   ↑↓ LEVEL", width / 2, height - 25);
 }

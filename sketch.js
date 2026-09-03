@@ -2,18 +2,24 @@
 // PRESS START — PROTÓTIPO RÍTMICO
 // ============================================================
 
+let pixelFont;
 
 // ============================================================
 // SETUP
 // ============================================================
 
-function setup() {
+async function setup() {
+  pixelFont = await loadFont(
+   "assets/fonts/PressStart2P-Regular.ttf"
+  );
+  console.log(pixelFont);
   createCanvas(SCREEN_SIZE.width, SCREEN_SIZE.height);
-  noSmooth();
-  textFont("monospace");
+
+  textFont(pixelFont);
 
   buildCurrentLevel();
   resetGame();
+
   initMIDI();
 }
 

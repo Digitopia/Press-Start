@@ -62,7 +62,12 @@ function getXInArea(area, t) {
   );
 }
 
-function drawScore(area, events, isActive) {
+function drawScore(
+  area,
+  events,
+  isActive,
+  resultsMap = null
+) {
   push();
 
   // Preview mais discreto.
@@ -73,7 +78,11 @@ function drawScore(area, events, isActive) {
   drawScoreLaneGuides(area);
   drawScoreBeatGrid(area);
   drawScorePath(area, events);
-  drawScoreEvents(area, events);
+  drawScoreEvents(
+    area,
+    events,
+    resultsMap
+  );
 
   // Só a partitura ativa tem bola.
   if (isActive) {
@@ -101,7 +110,11 @@ function drawScoreLabel(area, isActive) {
   textStyle(NORMAL);
 }
 
-function drawScoreEvents(area, events) {
+function drawScoreEvents(
+  area,
+  events,
+  resultsMap
+) {
   for (const event of events) {
     const lane =
       LANES[event.lane];
@@ -119,9 +132,9 @@ function drawScoreEvents(area, events) {
       );
 
     const result =
-      GAME.eventResults.get(
-        event.id
-      );
+      resultsMap
+        ? resultsMap.get(event.id)
+        : null;
 
     // Evento já resolvido.
     if (result) {
@@ -655,17 +668,17 @@ function drawGameArea() {
   const areas =
     getScoreAreas();
 
-  // Por enquanto ambos mostram
-  // exatamente o mesmo compasso.
   drawScore(
     areas.left,
     GAME.events,
-    true
+    true,
+    GAME.eventResults
   );
 
   drawScore(
     areas.right,
-    GAME.events,
-    false
+    GAME.nextEvents,
+    false,
+    null
   );
 }

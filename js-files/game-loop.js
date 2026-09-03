@@ -76,8 +76,9 @@ function finishCurrentBar() {
   GAME.eventResults.clear();
   GAME.currentBeat = null;
 
-  // Novo compasso, novo conteúdo.
-  buildCurrentLevel();
+  // O preview torna-se o compasso atual
+  // e é gerado um novo preview.
+  advanceToNextBar();
 }
 
 // ============================================================

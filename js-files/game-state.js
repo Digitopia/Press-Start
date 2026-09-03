@@ -12,8 +12,15 @@ const GAME = {
   // Eventos musicais construídos a partir do compasso atual
   events: [],
 
+  // Eventos musicais do compasso seguinte,
+  // usados apenas para PREVIEW.
+  nextEvents: [],
+
   // Pontos usados para desenhar o percurso
   pathPoints: [],
+
+  // Percurso do compasso seguinte.
+  nextPathPoints: [],
 
   // Resultado de cada evento no compasso atual
   // id -> PERFECT / GOOD / OK / MISS / WRONG
@@ -48,17 +55,62 @@ function getBarDurationMs() {
 }
 
 // ============================================================
-// CONSTRUIR NÍVEL / GERAR UM NOVO COMPASSO
-//
-// Chamada tanto no arranque do jogo como no fim de cada
-// compasso, para que o conteúdo seja sempre diferente.
+// GERAR DADOS DE UM COMPASSO
+// ============================================================
+
+function generateBarData() {
+  const config = getCurrentLevelConfig();
+
+  const beats = generateBar(config);
+
+  // buildEvents() espera config.beats,
+  // por isso criamos uma cópia temporária da configuração.
+  const tempConfig = {
+    ...config,
+    beats
+  };
+
+  const events = buildEvents(tempConfig);
+  const pathPoints = buildPath(events);
+
+  return {
+    beats,
+    events,
+    pathPoints
+  };
+}
+
+
+// ============================================================
+// CONSTRUIR COMPASSO ATUAL + PREVIEW
 // ============================================================
 
 function buildCurrentLevel() {
-  const config = getCurrentLevelConfig();
-  config.beats = generateBar(config);
-  GAME.events = buildEvents(config);
-  GAME.pathPoints = buildPath(GAME.events);
+  const current = generateBarData();
+  const next = generateBarData();
+
+  GAME.events = current.events;
+  GAME.pathPoints = current.pathPoints;
+
+  GAME.nextEvents = next.events;
+  GAME.nextPathPoints = next.pathPoints;
+}
+
+
+// ============================================================
+// AVANÇAR PARA O COMPASSO SEGUINTE
+// ============================================================
+
+function advanceToNextBar() {
+  // O preview passa a ser o compasso atual.
+  GAME.events = GAME.nextEvents;
+  GAME.pathPoints = GAME.nextPathPoints;
+
+  // Gerar imediatamente um novo preview.
+  const next = generateBarData();
+
+  GAME.nextEvents = next.events;
+  GAME.nextPathPoints = next.pathPoints;
 }
 
 // ============================================================

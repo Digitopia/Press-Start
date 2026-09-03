@@ -3,6 +3,28 @@
 // ============================================================
 
 function updateGame() {
+
+  if (!audioCtx) return;
+
+  if (GAME.state === "countdown") {
+
+    updateCountdown();
+
+    return;
+
+  }
+
+  if (
+
+    GAME.state !== "playing" ||
+
+    GAME.barStartAudioTime === null
+
+  ) {
+
+    return;
+
+  }
   if (GAME.state !== "playing" || !audioCtx || GAME.barStartAudioTime === null) {
     return;
   }
@@ -266,4 +288,78 @@ function togglePlay() {
   GAME.state = "playing";
   GAME.barStartAudioTime = audioCtx.currentTime - GAME.pausedElapsedSeconds;
   GAME.currentBeat = null;
+}
+
+// ============================================================
+// COUNTDOWN
+// ============================================================
+
+function startCountdown() {
+  ensureAudioContext();
+
+  GAME.state = "countdown";
+
+  GAME.countdownStartAudioTime =
+    audioCtx.currentTime;
+
+  GAME.countdownBeat = null;
+
+  GAME.ballPosition = 0;
+}
+
+function updateCountdown() {
+  const config =
+    getCurrentLevelConfig();
+
+  const beatDurationSeconds =
+    60 / config.bpm;
+
+  const totalCountdownSeconds =
+    beatDurationSeconds *
+    config.beatsPerBar;
+
+  const elapsed =
+    audioCtx.currentTime -
+    GAME.countdownStartAudioTime;
+
+  const beatIndex =
+    floor(
+      elapsed /
+      beatDurationSeconds
+    );
+
+  // Novo beat do countdown
+  if (
+    beatIndex !== GAME.countdownBeat &&
+    beatIndex < config.beatsPerBar
+  ) {
+    GAME.countdownBeat =
+      beatIndex;
+
+    // click de contagem
+    playBeep(
+      beatIndex === 0 ? 700 : 500,
+      50,
+      0.12
+    );
+  }
+
+  // Countdown terminou
+  if (
+    elapsed >= totalCountdownSeconds
+  ) {
+    GAME.state = "playing";
+
+    GAME.barStartAudioTime =
+      GAME.countdownStartAudioTime +
+      totalCountdownSeconds;
+
+    GAME.countdownStartAudioTime =
+      null;
+
+    GAME.countdownBeat =
+      null;
+
+    GAME.currentBeat = null;
+  }
 }

@@ -38,7 +38,10 @@ const GAME = {
   barStartAudioTime: null,
   pausedElapsedSeconds: 0,
 
-  currentBeat: null
+  currentBeat: null,
+
+  countdownStartAudioTime: null,
+  countdownBeat: null
 };
 
 

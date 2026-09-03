@@ -72,7 +72,7 @@ function drawScore(
 
   // Preview mais discreto.
   drawingContext.globalAlpha =
-    isActive ? 1.0 : 0.35;
+    isActive ? 1.0 : 0.55;
 
   drawScoreLabel(area, isActive);
   drawScoreLaneGuides(area);
@@ -681,4 +681,45 @@ function drawGameArea() {
     false,
     null
   );
+}
+
+function drawCountdownOverlay() {
+  if (
+    GAME.state !== "countdown" ||
+    GAME.countdownBeat === null
+  ) {
+    return;
+  }
+
+  const config =
+    getCurrentLevelConfig();
+
+  const number =
+    config.beatsPerBar -
+    GAME.countdownBeat;
+
+  push();
+
+  // Fundo semi-transparente
+  noStroke();
+  fill(0, 140);
+  rect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  // Número
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(72);
+
+  text(
+    number,
+    width / 2,
+    height / 2
+  );
+
+  pop();
 }

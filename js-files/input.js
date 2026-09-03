@@ -69,7 +69,10 @@ function keyPressed() {
 
   // SPACE
   if (keyCode === 32) {
-    togglePlay();
+    if (GAME.state === "ready") {
+      startCountdown();
+    }
+
     return false;
   }
 

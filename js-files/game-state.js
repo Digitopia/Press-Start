@@ -32,7 +32,7 @@ const GAME = {
   barNumber: 1,
 
   // parâmetros iniciais para se avançar de nível
-  nextlevel_score: 20,
+  nextlevel_score: 15,
   nextlevel_combo: 3,
 
   // parâmetros para gameover
@@ -141,7 +141,7 @@ function resetGame() {
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
-  GAME.nextlevel_score = 20;
+  GAME.nextlevel_score = 15;
   GAME.nextlevel_combo = 3;
 
   GAME.missStreak = 0;
@@ -180,9 +180,11 @@ function changeLevel() {
 
   if (GAME.score >= GAME.nextlevel_score && GAME.combo >= GAME.nextlevel_combo) {
 
+    // se já está no último nível — não há mais para onde subir
+    if (GAME.level >= LEVEL_CONFIGS.length) return;
+
     const newLevel = GAME.level + 1
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
-    if (nextLevel === LEVEL_CONFIGS.length) return;
     GAME.level = nextLevel;
 
     // sempre que se passa de nível é calculado numa nova pontuação e um novo combo para avançar

@@ -106,7 +106,6 @@ function finishCurrentBar() {
   // O preview torna-se o compasso atual
   // e é gerado um novo preview.
   advanceToNextBar();
-
 }
 
 // ============================================================
@@ -239,16 +238,16 @@ function tryLaneHit(lane) {
 const JUDGEMENT_POINTS = { OK: 1, GOOD: 2, PERFECT: 3 };
 
 function registerSuccessfulHit(event, judgement) {
-  const points = JUDGEMENT_POINTS[judgement] ?? 1;
+  const basePoints = JUDGEMENT_POINTS[judgement] ?? 1;
 
   GAME.combo++;
   GAME.maxCombo = Math.max(GAME.maxCombo, GAME.combo);
-  GAME.score += points;
+
+  GAME.score += basePoints * GAME.combo;   // points x combo
 
   if (GAME.missStreak !== 0) {
     GAME.missStreak--
   }
-
 
   GAME.lastJudgement = judgement;
   GAME.judgementTimer = 550;

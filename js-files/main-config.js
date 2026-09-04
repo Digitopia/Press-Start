@@ -78,14 +78,15 @@ function createLevelRules({
   // quantidade, não a identidade.
   laneCount = 1,
 
-  // Em que posições da subdivisão pode nascer uma nota.
-  // Índices de 0 a subdivisionsPerBeat-1. Posições fora
-  // desta lista nunca têm nota.
-  allowedSubdivisions,
+  // Banco de células rítmicas.
+  // Cada célula é um array de subdivisões ativas dentro de UM beat.
+  allowedRhythms,
 
-  // Probabilidade de, numa posição permitida, existir nota.
+  // density controla a probabilidade de um beat 
+  // ter notas ou ficar em silêncio, não cada subdivisão individual.
   density,
- minNotesPerBar = 1, 
+
+  minNotesPerBar = 1,
   avoidConsecutiveRepeat = false,
   hitWindows = DEFAULT_HIT_WINDOWS
 }) {
@@ -94,11 +95,10 @@ function createLevelRules({
     beatsPerBar,
     subdivisionsPerBeat,
     laneCount,
-    // Por omissão, todas as posições são permitidas.
-    allowedSubdivisions: allowedSubdivisions ?? [...Array(subdivisionsPerBeat).keys()],
+    allowedRhythms: allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]],
     density,
     avoidConsecutiveRepeat,
-     minNotesPerBar,
+    minNotesPerBar,
     hitWindows,
     crossingDurationMs: (60000 / bpm) * beatsPerBar,
     // preenchido a cada compasso por generateBar()

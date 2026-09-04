@@ -41,16 +41,25 @@ function pickRandomLane(lanes, lastLane, avoidRepeat) {
   return choice;
 }
 
+
+// slots para preencher se o compasso ficar abaixo do mínimo:
+// a união de todas as posições que aparecem em qualquer célula rítmica.
+function getRhythmSubdivisionPool(config) {
+  const set = new Set();
+  for (const rhythm of config.allowedRhythms) {
+    for (const subIndex of rhythm) set.add(subIndex);
+  }
+  return [...set];
+}
+
 function collectEmptySlots(beats, config) {
   const slots = [];
+  const pool = getRhythmSubdivisionPool(config);
 
   for (let beatIndex = 0; beatIndex < beats.length; beatIndex++) {
     const pattern = beats[beatIndex].pattern;
 
-    for (const subIndex of config.allowedSubdivisions) {
-      // INATIVO
-      // if (beatIndex === 0 && subIndex === 0) continue;   
-      // continua proibido
+    for (const subIndex of pool) {
       if (!pattern[subIndex]) {
         slots.push({ beatIndex, subIndex });
       }
@@ -94,16 +103,11 @@ function generateBar(config) {
   for (let beatIndex = 0; beatIndex < config.beatsPerBar; beatIndex++) {
     const pattern = new Array(config.subdivisionsPerBeat).fill(0);
 
-    for (const subIndex of config.allowedSubdivisions) {
+    // density decide SE este beat tem ritmo, ou fica em silêncio.
+    if (random() < config.density) {
+      const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
 
-      // INATIVO
-      // Único ponto impossível de acertar: o instante exato
-      // da troca de compasso (beat 0, subdivisão 0). Tudo o
-      // resto — incluindo as outras subdivisões do beat 0 —
-      // já ocorre depois desse instante e tem tempo de reação.
-      // if (beatIndex === 0 && subIndex === 0) continue;
-
-      if (random() < config.density) {
+      for (const subIndex of rhythm) {
         const lane = pickRandomLane(activeLanes, lastLane, config.avoidConsecutiveRepeat);
         pattern[subIndex] = lane;
         lastLane = lane;

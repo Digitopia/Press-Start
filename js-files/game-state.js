@@ -144,7 +144,7 @@ function resetGame() {
   GAME.nextlevel_score = 60;
 
   GAME.missStreak = 0;
-  GAME.maxMissStreak = 6;
+  GAME.maxMissStreak = 5;
 
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;

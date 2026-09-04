@@ -6,7 +6,7 @@
 // 2. Percorre cada beat. O BEAT 1 (índice 0) fica sempre
 //    vazio: como a passagem de compasso é instantânea (sem
 //    contagem/lead-in), uma nota logo ali seria impossível
-//    de acertar a tempo.
+//    de acertar a tempo. ---- ISTO ESTÁ INATIVO (COMENTADO)
 // 3. Nos restantes beats, só as posições em
 //    `allowedSubdivisions` podem ter nota, e só com
 //    probabilidade `density`.
@@ -48,8 +48,9 @@ function collectEmptySlots(beats, config) {
     const pattern = beats[beatIndex].pattern;
 
     for (const subIndex of config.allowedSubdivisions) {
-      if (beatIndex === 0 && subIndex === 0) continue;   
-        // continua proibido
+      // INATIVO
+      // if (beatIndex === 0 && subIndex === 0) continue;   
+      // continua proibido
       if (!pattern[subIndex]) {
         slots.push({ beatIndex, subIndex });
       }
@@ -95,11 +96,12 @@ function generateBar(config) {
 
     for (const subIndex of config.allowedSubdivisions) {
 
+      // INATIVO
       // Único ponto impossível de acertar: o instante exato
       // da troca de compasso (beat 0, subdivisão 0). Tudo o
       // resto — incluindo as outras subdivisões do beat 0 —
       // já ocorre depois desse instante e tem tempo de reação.
-      if (beatIndex === 0 && subIndex === 0) continue;
+      // if (beatIndex === 0 && subIndex === 0) continue;
 
       if (random() < config.density) {
         const lane = pickRandomLane(activeLanes, lastLane, config.avoidConsecutiveRepeat);

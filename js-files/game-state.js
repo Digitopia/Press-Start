@@ -171,7 +171,7 @@ function changeLevel() {
 
     // sempre que se passa de nível é calculado numa nova pontuação e um novo combo para avançar
     // a pontuação necessária duplica em relação à pontuação atual do jogador
-    // quanto melhor for o jogo, ou seja, passar de nível com uma pontuação mais alta, 
+    // quanto melhor for o jogador, ou seja, passar de nível com uma pontuação mais alta, 
     // mais difícil o jogo se torna, pois precisa de maior pontuação para avançar no nível seguinte
     GAME.nextlevel_score = GAME.score * 2
     GAME.nextlevel_combo++
@@ -183,6 +183,7 @@ function changeLevel() {
     GAME.countdownStartAudioTime = audioCtx.currentTime
     GAME.countdownBeat = null
     GAME.ballPosition = 0
+    GAME.combo = 0
     //resetGame();
   }
 

@@ -32,8 +32,8 @@ const GAME = {
   barNumber: 1,
 
   // parâmetros iniciais para se avançar de nível
-  nextlevel_score: 15,
-  nextlevel_combo: 3,
+  nextlevel_score: 60,
+  levelImprove: 20,
 
   // parâmetros para gameover
   missStreak: 0,
@@ -141,11 +141,10 @@ function resetGame() {
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
-  GAME.nextlevel_score = 15;
-  GAME.nextlevel_combo = 3;
+  GAME.nextlevel_score = 60;
 
   GAME.missStreak = 0;
-  GAME.maxMissStreak = 5;
+  GAME.maxMissStreak = 6;
 
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
@@ -178,7 +177,7 @@ function handChangeLevel(newLevel) {
 // automaticamente
 function changeLevel() {
 
-  if (GAME.score >= GAME.nextlevel_score && GAME.combo >= GAME.nextlevel_combo) {
+  if (GAME.score >= GAME.nextlevel_score) {
 
     // se já está no último nível — não há mais para onde subir
     if (GAME.level >= LEVEL_CONFIGS.length) return;
@@ -187,12 +186,11 @@ function changeLevel() {
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
     GAME.level = nextLevel;
 
-    // sempre que se passa de nível é calculado numa nova pontuação e um novo combo para avançar
-    // a pontuação necessária duplica em relação à pontuação atual do jogador
-    // quanto melhor for o jogador, ou seja, passar de nível com uma pontuação mais alta, 
-    // mais difícil o jogo se torna, pois precisa de maior pontuação para avançar no nível seguinte
-    GAME.nextlevel_score = GAME.score * 2
-    GAME.nextlevel_combo++
+    // sempre que se passa de nível é calculado numa nova pontuação necessária para avançar: 
+    // o valor extra à pontuação necessária atual é multiplicado pelo best combo do jogador
+    // quanto melhor for o jogador, mais difícil o jogo se torna, 
+    // pois precisa de maior pontuação para avançar no nível seguinte
+    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * GAME.maxCombo
 
 
     // sempre que se passa de nível o nº máximo de falhas sucessivas para perder aumenta vezes 
@@ -209,11 +207,11 @@ function changeLevel() {
     console.log(`next level, yay! Go to level ${GAME.nextLevel} now you need to reach a score of ${GAME.nextlevel_score} and a como of x${GAME.nextlevel_combo}... GO!`)
 
     GAME.state = "nextlevel"
+
     // Copiado do startCountdown() 
     GAME.countdownStartAudioTime = audioCtx.currentTime
     GAME.countdownBeat = null
     GAME.ballPosition = 0
     GAME.combo = 0
-    //resetGame();
   }
 }

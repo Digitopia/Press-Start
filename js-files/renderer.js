@@ -448,7 +448,8 @@ function drawHeader() {
     `BAR ${GAME.barNumber}`,
     `SCORE ${GAME.score}`,
     `COMBO x${GAME.combo}`,
-    `BEST x${GAME.maxCombo}`
+    `BEST x${GAME.maxCombo}`,
+    `LIFES x${GAME.maxMissStreak - GAME.missStreak}`
   ];
 
   // Distribuir uniformemente pela largura do ecrã.
@@ -639,7 +640,7 @@ function drawBall() {
 // DESENHO — FEEDBACK
 // ============================================================
 
-const JUDGEMENT_COLORS = { PERFECT: [255], GOOD: [200], OK: [150] };
+const JUDGEMENT_COLORS = { PERFECT: [0, 255, 120], GOOD: [255, 220, 40], OK: [200] };
 
 function drawJudgement() {
   if (GAME.judgementTimer <= 0) return;
@@ -729,19 +730,14 @@ function drawCountdownOverlay() {
 }
 
 function drawNextLevelOverlay() {
-  if (
-    GAME.state !== "nextlevel" ||
-    GAME.countdownBeat === null
-  ) {
+  if (GAME.state !== "nextlevel" || GAME.countdownBeat === null) {
     return;
   }
 
-  const config =
-    getCurrentLevelConfig();
+  const config = getCurrentLevelConfig();
 
   const number =
-    config.beatsPerBar -
-    GAME.countdownBeat;
+    config.beatsPerBar - GAME.countdownBeat;
 
   push();
 
@@ -774,6 +770,32 @@ function drawNextLevelOverlay() {
     width / 2,
     height / 2 + 56
   );
+
+  pop();
+}
+// ============================================================
+// GAME OVER – OVERLAY
+//
+// Sem countdown: pisca 3 vezes (fica invisível nas fases
+// ímpares) e depois fica visível de forma sólida.
+// ============================================================
+
+function drawGameOverOverlay() {
+  if (GAME.state !== "gameover") return;
+
+  const blink = floor((frameCount - GAME.gameOverStartFrame) / 12);
+  if (blink < 6 && blink % 2 === 1) return; // fase "apagada"
+
+  push();
+
+  noStroke();
+  fill(0, 140);
+  rect(0, 0, width, height);
+
+  fill(255, 60, 60);
+  textAlign(CENTER, CENTER);
+  textSize(56);
+  text("GAME OVER", width / 2, height / 2);
 
   pop();
 }

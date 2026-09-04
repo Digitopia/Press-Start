@@ -58,7 +58,6 @@ function updateGame() {
   if (GAME.judgementTimer > 0) {
     GAME.judgementTimer -= deltaTime;
   }
-  changeLevel();
 }
 
 // ============================================================
@@ -101,9 +100,13 @@ function finishCurrentBar() {
   GAME.eventResults.clear();
   GAME.currentBeat = null;
 
+  // o nível só avança no final de compassos, nunca a meio
+  changeLevel();
+
   // O preview torna-se o compasso atual
   // e é gerado um novo preview.
   advanceToNextBar();
+
 }
 
 // ============================================================
@@ -242,6 +245,11 @@ function registerSuccessfulHit(event, judgement) {
   GAME.maxCombo = Math.max(GAME.maxCombo, GAME.combo);
   GAME.score += points;
 
+  if (GAME.missStreak !== 0) {
+    GAME.missStreak--
+  }
+
+
   GAME.lastJudgement = judgement;
   GAME.judgementTimer = 550;
 
@@ -258,6 +266,17 @@ function registerSuccessfulHit(event, judgement) {
 
 function registerFailure(label, timerMs, beep = null) {
   GAME.combo = 0;
+
+  if (label === "MISS") {
+    GAME.missStreak++;
+  }
+
+  if (GAME.missStreak === GAME.maxMissStreak) {
+    GAME.state = 'gameover'
+    GAME.gameOverStartFrame = frameCount;
+    console.log(GAME.state)
+  }
+
   GAME.lastJudgement = label;
   GAME.judgementTimer = timerMs;
 

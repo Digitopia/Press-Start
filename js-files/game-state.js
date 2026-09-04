@@ -35,6 +35,10 @@ const GAME = {
   nextlevel_score: 20,
   nextlevel_combo: 3,
 
+  // parâmetros para gameover
+  missStreak: 0,
+  maxMissStreak: 5,
+
   lastJudgement: "",
   judgementTimer: 0,
 
@@ -45,7 +49,11 @@ const GAME = {
   currentBeat: null,
 
   countdownStartAudioTime: null,
-  countdownBeat: null
+  countdownBeat: null,
+
+  // Frame (frameCount) em que o "gameover" começou,
+  // usado só para controlar o piscar do overlay.
+  gameOverStartFrame: null
 };
 
 
@@ -133,6 +141,12 @@ function resetGame() {
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
+  GAME.nextlevel_score = 20;
+  GAME.nextlevel_combo = 3;
+
+  GAME.missStreak = 0;
+  GAME.maxMissStreak = 5;
+
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
 
@@ -141,6 +155,8 @@ function resetGame() {
 
   GAME.currentBeat = null;
   GAME.eventResults.clear();
+
+  GAME.gameOverStartFrame = null;
 
   buildCurrentLevel();
 }
@@ -176,6 +192,18 @@ function changeLevel() {
     GAME.nextlevel_score = GAME.score * 2
     GAME.nextlevel_combo++
 
+
+    // sempre que se passa de nível o nº máximo de falhas sucessivas para perder aumenta vezes 
+    // para se perder aumenta um, até um máximo de 10
+    // e o missStreak faz reset
+
+    if (GAME.maxMissStreak !== 10) {
+      GAME.maxMissStreak++
+    }
+
+    GAME.missStreak = 0
+
+
     console.log(`next level, yay! Go to level ${GAME.nextLevel} now you need to reach a score of ${GAME.nextlevel_score} and a como of x${GAME.nextlevel_combo}... GO!`)
 
     GAME.state = "nextlevel"
@@ -186,5 +214,4 @@ function changeLevel() {
     GAME.combo = 0
     //resetGame();
   }
-
 }

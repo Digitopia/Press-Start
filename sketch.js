@@ -41,4 +41,5 @@ function draw() {
 
   drawCountdownOverlay();
   drawNextLevelOverlay();
+  drawGameOverOverlay()
 }

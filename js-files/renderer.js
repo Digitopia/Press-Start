@@ -510,7 +510,7 @@ function drawScoreLaneGuides(area) {
     );
 
     rect(
-      area.x - 18,
+      area.x - 30,
       y - 4,
       10,
       8

@@ -9,7 +9,6 @@ function updateGame() {
   if (!audioCtx) return;
 
   if (GAME.state === "countdown" || GAME.state === "nextlevel") {
-    console.log(GAME.state)
     updateCountdown();
 
     return;
@@ -273,7 +272,6 @@ function registerFailure(label, timerMs, beep = null) {
   if (GAME.missStreak === GAME.maxMissStreak) {
     GAME.state = 'gameover'
     GAME.gameOverStartFrame = frameCount;
-    console.log(GAME.state)
   }
 
   GAME.lastJudgement = label;

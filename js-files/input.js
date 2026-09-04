@@ -84,13 +84,13 @@ function keyPressed() {
 
   // ↑ SETA PARA CIMA — nível anterior
   if (keyCode === 38) {
-    changeLevel(GAME.level - 1);
+    handChangeLevel(GAME.level - 1);
     return false;
   }
 
   // ↓ SETA PARA BAIXO — nível seguinte
   if (keyCode === 40) {
-    changeLevel(GAME.level + 1); 
+    handChangeLevel(GAME.level + 1);
     return false;
   }
 

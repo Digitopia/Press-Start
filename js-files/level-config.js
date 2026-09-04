@@ -11,8 +11,8 @@ const LEVEL_CONFIGS = [
     subdivisionsPerBeat: 4,
     laneCount: 1,
     allowedSubdivisions: [0, 2],
-    density: 0.5,
-    minNotesPerBar: 4  
+    density: 0.3,
+    minNotesPerBar: 4
   }),
 
   // ==========================================================
@@ -25,9 +25,9 @@ const LEVEL_CONFIGS = [
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 2,
-    allowedSubdivisions: [0 , 2, 3],
+    allowedSubdivisions: [0, 2, 3],
     density: 0.4,
-    minNotesPerBar: 4  
+    minNotesPerBar: 4
   }),
 
   // ==========================================================
@@ -41,7 +41,7 @@ const LEVEL_CONFIGS = [
     laneCount: 3,
     allowedSubdivisions: [0, 1, 2, 3],
     density: 0.6,
-    minNotesPerBar: 6,  
+    minNotesPerBar: 6,
     avoidConsecutiveRepeat: true
   }),
 
@@ -56,7 +56,7 @@ const LEVEL_CONFIGS = [
     laneCount: 4,
     allowedSubdivisions: [0, 1, 2, 3, 5],
     density: 0.6,
-    minNotesPerBar: 6,   
+    minNotesPerBar: 6,
     avoidConsecutiveRepeat: true
   })
 ];

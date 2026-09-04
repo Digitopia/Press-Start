@@ -31,6 +31,10 @@ const GAME = {
   maxCombo: 0,
   barNumber: 1,
 
+  // parâmetros iniciais para se avançar de nível
+  nextlevel_score: 20,
+  nextlevel_combo: 3,
+
   lastJudgement: "",
   judgementTimer: 0,
 
@@ -145,10 +149,41 @@ function resetGame() {
 // MUDAR NÍVEL
 // ============================================================
 
-function changeLevel(newLevel) {
+
+// by hand
+function handChangeLevel(newLevel) {
   const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
   if (nextLevel === GAME.level) return;
 
   GAME.level = nextLevel;
   resetGame();
+}
+
+// automaticamente
+function changeLevel() {
+
+  if (GAME.score >= GAME.nextlevel_score && GAME.combo >= GAME.nextlevel_combo) {
+
+    const newLevel = GAME.level + 1
+    const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
+    if (nextLevel === LEVEL_CONFIGS.length) return;
+    GAME.level = nextLevel;
+
+    // sempre que se passa de nível é calculado numa nova pontuação e um novo combo para avançar
+    // a pontuação necessária duplica em relação à pontuação atual do jogador
+    // quanto melhor for o jogo, ou seja, passar de nível com uma pontuação mais alta, 
+    // mais difícil o jogo se torna, pois precisa de maior pontuação para avançar no nível seguinte
+    GAME.nextlevel_score = GAME.score * 2
+    GAME.nextlevel_combo++
+
+    console.log(`next level, yay! Go to level ${GAME.nextLevel} now you need to reach a score of ${GAME.nextlevel_score} and a como of x${GAME.nextlevel_combo}... GO!`)
+
+    GAME.state = "nextlevel"
+    // Copiado do startCountdown() 
+    GAME.countdownStartAudioTime = audioCtx.currentTime
+    GAME.countdownBeat = null
+    GAME.ballPosition = 0
+    //resetGame();
+  }
+
 }

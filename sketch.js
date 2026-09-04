@@ -10,7 +10,7 @@ let pixelFont;
 
 async function setup() {
   pixelFont = await loadFont(
-   "assets/fonts/PressStart2P-Regular.ttf"
+    "assets/fonts/PressStart2P-Regular.ttf"
   );
   console.log(pixelFont);
   createCanvas(SCREEN_SIZE.width, SCREEN_SIZE.height);
@@ -40,4 +40,5 @@ function draw() {
   drawFooter();
 
   drawCountdownOverlay();
+  drawNextLevelOverlay();
 }

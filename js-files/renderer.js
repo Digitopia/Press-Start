@@ -247,7 +247,7 @@ function getScorePathPoints(
 
   const lastEvent =
     events[
-      events.length - 1
+    events.length - 1
     ];
 
   // Termina à direita na fila da última nota.
@@ -683,6 +683,10 @@ function drawGameArea() {
   );
 }
 
+// ============================================================
+// COUNTDOWN – OVERLAY
+// ============================================================
+
 function drawCountdownOverlay() {
   if (
     GAME.state !== "countdown" ||
@@ -719,6 +723,56 @@ function drawCountdownOverlay() {
     number,
     width / 2,
     height / 2
+  );
+
+  pop();
+}
+
+function drawNextLevelOverlay() {
+  if (
+    GAME.state !== "nextlevel" ||
+    GAME.countdownBeat === null
+  ) {
+    return;
+  }
+
+  const config =
+    getCurrentLevelConfig();
+
+  const number =
+    config.beatsPerBar -
+    GAME.countdownBeat;
+
+  push();
+
+  // Fundo semi-transparente
+  noStroke();
+  fill(0, 140);
+  rect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  // Número
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(56);
+
+  const levelText = `LEVEL ${GAME.level}`
+
+  text(
+    levelText,
+    width / 2,
+    height / 2 - 56
+  );
+
+  textSize(72);
+  text(
+    number,
+    width / 2,
+    height / 2 + 56
   );
 
   pop();

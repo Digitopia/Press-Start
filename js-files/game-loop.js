@@ -4,10 +4,12 @@
 
 function updateGame() {
 
+
+
   if (!audioCtx) return;
 
-  if (GAME.state === "countdown") {
-
+  if (GAME.state === "countdown" || GAME.state === "nextlevel") {
+    console.log(GAME.state)
     updateCountdown();
 
     return;
@@ -56,6 +58,7 @@ function updateGame() {
   if (GAME.judgementTimer > 0) {
     GAME.judgementTimer -= deltaTime;
   }
+  changeLevel();
 }
 
 // ============================================================
@@ -227,7 +230,7 @@ function tryLaneHit(lane) {
 }
 
 // ============================================================
-// ACERTO
+// ACERTO – CORRESPONDÊNCIA DE PONTOS
 // ============================================================
 
 const JUDGEMENT_POINTS = { OK: 1, GOOD: 2, PERFECT: 3 };

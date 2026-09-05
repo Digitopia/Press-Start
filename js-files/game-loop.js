@@ -10,7 +10,6 @@ function updateGame() {
 
   if (GAME.state === "countdown" || GAME.state === "nextlevel") {
     updateCountdown();
-
     return;
 
   }
@@ -18,7 +17,6 @@ function updateGame() {
   if (
 
     GAME.state !== "playing" ||
-
     GAME.barStartAudioTime === null
 
   ) {
@@ -292,7 +290,7 @@ function registerStrayHit() {
 
 
 // ============================================================
-// PLAY / PAUSE
+// PLAY / PAUSE — ESTA FUNÇÃO DE MOMENTO NUNCA É CHAMADA (INATIVO)
 // ============================================================
 
 function togglePlay() {

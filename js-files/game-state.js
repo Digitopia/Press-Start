@@ -32,7 +32,7 @@ const GAME = {
   barNumber: 1,
 
   // parâmetros iniciais para se avançar de nível
-  nextlevel_score: 60,
+  nextlevel_score: 50,
   levelImprove: 20,
 
   // parâmetros para gameover
@@ -190,7 +190,7 @@ function changeLevel() {
     // o valor extra à pontuação necessária atual é multiplicado pelo best combo do jogador
     // quanto melhor for o jogador, mais difícil o jogo se torna, 
     // pois precisa de maior pontuação para avançar no nível seguinte
-    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * GAME.maxCombo
+    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * floor(GAME.maxCombo / 2)
 
 
     // sempre que se passa de nível o nº máximo de falhas sucessivas para perder aumenta vezes 
@@ -202,7 +202,6 @@ function changeLevel() {
     }
 
     GAME.missStreak = 0
-
 
     console.log(`next level, yay! Go to level ${GAME.nextLevel} now you need to reach a score of ${GAME.nextlevel_score} and a como of x${GAME.nextlevel_combo}... GO!`)
 

@@ -42,31 +42,19 @@ function pickRandomLane(lanes, lastLane, avoidRepeat) {
 }
 
 
-// slots para preencher se o compasso ficar abaixo do mínimo:
-// a união de todas as posições que aparecem em qualquer célula rítmica.
-function getRhythmSubdivisionPool(config) {
-  const set = new Set();
-  for (const rhythm of config.allowedRhythms) {
-    for (const subIndex of rhythm) set.add(subIndex);
-  }
-  return [...set];
-}
-
-function collectEmptySlots(beats, config) {
-  const slots = [];
-  const pool = getRhythmSubdivisionPool(config);
+// Devolve os índices dos beats ainda completamente vazios
+// (nenhuma subdivisão preenchida) — só esses podem receber
+// uma célula rítmica nova, para nunca misturar duas células
+// diferentes no mesmo beat.
+function getEmptyBeatIndexes(beats) {
+  const indexes = [];
 
   for (let beatIndex = 0; beatIndex < beats.length; beatIndex++) {
-    const pattern = beats[beatIndex].pattern;
-
-    for (const subIndex of pool) {
-      if (!pattern[subIndex]) {
-        slots.push({ beatIndex, subIndex });
-      }
-    }
+    const isEmpty = beats[beatIndex].pattern.every(cell => !cell);
+    if (isEmpty) indexes.push(beatIndex);
   }
 
-  return slots;
+  return indexes;
 }
 
 function shuffleInPlace(array) {
@@ -81,16 +69,22 @@ function fillUntilMinimum(beats, config, activeLanes, lastLane, currentCount) {
   const target = config.minNotesPerBar;
   if (currentCount >= target) return;
 
-  const emptySlots = shuffleInPlace(collectEmptySlots(beats, config));
+  const emptyBeats = shuffleInPlace(getEmptyBeatIndexes(beats));
   let lane = lastLane;
   let added = 0;
 
-  for (const slot of emptySlots) {
+  for (const beatIndex of emptyBeats) {
     if (currentCount + added >= target) break;
 
-    lane = pickRandomLane(activeLanes, lane, config.avoidConsecutiveRepeat);
-    beats[slot.beatIndex].pattern[slot.subIndex] = lane;
-    added++;
+    // Escolhe uma célula rítmica inteira para este beat,
+    // tal como a fase principal de generateBar() já faz.
+    const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
+
+    for (const subIndex of rhythm) {
+      lane = pickRandomLane(activeLanes, lane, config.avoidConsecutiveRepeat);
+      beats[beatIndex].pattern[subIndex] = lane;
+      added++;
+    }
   }
 }
 

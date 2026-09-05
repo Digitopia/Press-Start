@@ -784,18 +784,47 @@ function drawGameOverOverlay() {
   if (GAME.state !== "gameover") return;
 
   const blink = floor((frameCount - GAME.gameOverStartFrame) / 12);
-  if (blink < 6 && blink % 2 === 1) return; // fase "apagada"
+  const showTitle = blink >= 6 || blink % 2 === 0; // true nas fases "acesas" ou depois de acabar de piscar
 
-  push();
 
-  noStroke();
-  fill(0, 140);
-  rect(0, 0, width, height);
+  if (showTitle) {
+    push();
 
-  fill(255, 60, 60);
-  textAlign(CENTER, CENTER);
-  textSize(56);
-  text("GAME OVER", width / 2, height / 2);
+    noStroke();
+    fill(0, 140);
+    rect(0, 0, width, height);
 
-  pop();
+
+    fill(255, 60, 60);
+    textAlign(CENTER, CENTER);
+    textSize(56);
+    text("GAME OVER", width / 2, height / 2);
+
+
+    // ----------------------------------------------------------
+    // HUD — informação do jogo numa única linha
+    // ----------------------------------------------------------
+    textStyle(NORMAL)
+    textAlign(CENTER, CENTER);
+    textSize(14);
+
+    const hudY = height - height / 4;
+
+    const items = [
+      `LEVEL ${GAME.level}`,
+      `BAR ${GAME.barNumber}`,
+      `SCORE ${GAME.score}`,
+      `BEST COMBOx${GAME.maxCombo}`,
+    ];
+
+    const left = 90;
+    const right = width - 150;
+
+    for (let i = 0; i < items.length; i++) {
+      const x = map(i, 0, items.length - 1, left, right);
+      text(items[i], x, hudY);
+    }
+
+    pop();
+  }
 }

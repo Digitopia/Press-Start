@@ -771,8 +771,31 @@ function drawNextLevelOverlay() {
     height / 2 + 56
   );
 
+  // ----------------------------------------------------------
+  // HUD — informação do jogo numa única linha
+  // ----------------------------------------------------------
+  textStyle(NORMAL)
+  textAlign(CENTER, CENTER);
+  textSize(26);
+
+  const hudY = height / 2 + height / 4;
+
+  const items = [
+    `${config.bpm} BPM`,
+    `LIFES x${GAME.maxMissStreak - GAME.missStreak}`
+  ];
+
+  const left = width / 4;
+  const right = width - width / 4;
+
+  for (let i = 0; i < items.length; i++) {
+    const x = map(i, 0, items.length - 1, left, right);
+    text(items[i], x, hudY);
+  }
+
   pop();
 }
+
 // ============================================================
 // GAME OVER – OVERLAY
 //

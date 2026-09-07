@@ -41,6 +41,31 @@ function pickRandomLane(lanes, lastLane, avoidRepeat) {
   return choice;
 }
 
+// Preenche uma célula rítmica e devolve a última fila usada.
+// Por defeito, todas as notas da célula ficam na mesma fila.
+// Níveis futuros podem permitir mudanças dentro da célula com
+// allowLaneChangesWithinCell: true.
+function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
+  let lane = lastLane;
+
+  if (!config.allowLaneChangesWithinCell) {
+    lane = pickRandomLane(activeLanes, lastLane, config.avoidConsecutiveRepeat);
+
+    for (const subIndex of rhythm) {
+      pattern[subIndex] = lane;
+    }
+
+    return lane;
+  }
+
+  for (const subIndex of rhythm) {
+    lane = pickRandomLane(activeLanes, lane, config.avoidConsecutiveRepeat);
+    pattern[subIndex] = lane;
+  }
+
+  return lane;
+}
+
 
 // Devolve os índices dos beats ainda completamente vazios
 // (nenhuma subdivisão preenchida) — só esses podem receber
@@ -80,11 +105,15 @@ function fillUntilMinimum(beats, config, activeLanes, lastLane, currentCount) {
     // tal como a fase principal de generateBar() já faz.
     const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
 
-    for (const subIndex of rhythm) {
-      lane = pickRandomLane(activeLanes, lane, config.avoidConsecutiveRepeat);
-      beats[beatIndex].pattern[subIndex] = lane;
-      added++;
-    }
+    lane = fillRhythmCell(
+      beats[beatIndex].pattern,
+      rhythm,
+      config,
+      activeLanes,
+      lane
+    );
+
+    added += rhythm.length;
   }
 }
 
@@ -101,12 +130,15 @@ function generateBar(config) {
     if (random() < config.density) {
       const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
 
-      for (const subIndex of rhythm) {
-        const lane = pickRandomLane(activeLanes, lastLane, config.avoidConsecutiveRepeat);
-        pattern[subIndex] = lane;
-        lastLane = lane;
-        noteCount++;
-      }
+      lastLane = fillRhythmCell(
+        pattern,
+        rhythm,
+        config,
+        activeLanes,
+        lastLane
+      );
+
+      noteCount += rhythm.length;
     }
 
     beats.push({ pattern });

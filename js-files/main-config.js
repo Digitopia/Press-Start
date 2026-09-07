@@ -62,6 +62,8 @@ const MIDI = { access: null, input: null };
 //                          subdivisão ter nota
 //   avoidConsecutiveRepeat evita repetir a mesma fila
 //                          duas vezes seguidas
+//   allowLaneChangesWithinCell permite que as notas de uma
+//                              célula usem filas diferentes
 //
 // O CONTEÚDO (que fila soa em cada subdivisão) é gerado
 // aleatoriamente, de novo, a cada compasso.
@@ -88,6 +90,7 @@ function createLevelRules({
 
   minNotesPerBar = 1,
   avoidConsecutiveRepeat = false,
+  allowLaneChangesWithinCell = false,
   hitWindows = DEFAULT_HIT_WINDOWS
 }) {
   return {
@@ -98,6 +101,7 @@ function createLevelRules({
     allowedRhythms: allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]],
     density,
     avoidConsecutiveRepeat,
+    allowLaneChangesWithinCell,
     minNotesPerBar,
     hitWindows,
     crossingDurationMs: (60000 / bpm) * beatsPerBar,

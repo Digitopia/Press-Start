@@ -24,7 +24,7 @@ const LEVEL_CONFIGS = [
   // ==========================================================
 
   createLevelRules({
-    bpm: 70,
+    bpm: 63,
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 2,
@@ -38,20 +38,19 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 3 — QUATRO FILAS
+  // LEVEL 3 — Três FILAS
   // ==========================================================
 
   createLevelRules({
-    bpm: 70,
+    bpm: 66,
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 3,
     allowedRhythms: [
       [0],
       [2],
-      [2, 4],
       [0, 2],
-      [0, 1, 3]
+      [2, 3],
     ],
     density: 0.6,
     minNotesPerBar: 6,
@@ -59,7 +58,52 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 4 — TERNÁRIO / SUBDIVISÃO EM 6
+  // LEVEL 4 — More Complex Rhythms, Quatro Filas
+  // ==========================================================
+
+  createLevelRules({
+    bpm: 66,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 4,
+    allowedRhythms: [
+      [0],
+      [2],
+      [0, 2],
+      [2, 3],
+      [0, 1, 3]
+    ],
+    density: 0.6,
+    minNotesPerBar: 6,
+    avoidConsecutiveRepeat: true
+  }),
+
+    // ==========================================================
+    // LEVEL 5 — Even More Complex Rhythms
+    // ==========================================================
+
+    createLevelRules({
+    bpm: 72,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 4,
+    allowedRhythms: [
+      [0],
+      [2],
+      [1],
+      [3],
+      [0, 2],
+      [2, 3],
+      [0, 1, 3],
+      [0, 2, 3]
+    ],
+    density: 0.6,
+    minNotesPerBar: 6,
+    avoidConsecutiveRepeat: true
+  }),
+
+  // ==========================================================
+  // LEVEL 6 — TERNÁRIO / SUBDIVISÃO EM 6
   // ==========================================================
 
   createLevelRules({

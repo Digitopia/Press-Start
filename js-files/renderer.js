@@ -543,7 +543,7 @@ function drawJudgement() {
   textAlign(CENTER, CENTER);
   textSize(24);
 
-  fill(...(JUDGEMENT_COLORS[GAME.lastJudgement] ?? [255, 80, 80]));
+  fill(...(JUDGEMENT_COLORS[GAME.lastJudgement] ?? [255, 70, 70]));
 
   text(GAME.lastJudgement, width / 2, height - 70);
 
@@ -713,7 +713,7 @@ function drawGameOverOverlay() {
     rect(0, 0, width, height);
 
 
-    fill(255, 60, 60);
+    fill(255, 70, 70);
     textAlign(CENTER, CENTER);
     textSize(56);
     text("GAME OVER", width / 2, height / 2);

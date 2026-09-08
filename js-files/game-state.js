@@ -32,8 +32,8 @@ const GAME = {
   barNumber: 1,
 
   // parâmetros iniciais para se avançar de nível
-  nextlevel_score: 50,
-  levelImprove: 20,
+  nextlevel_score: 300,
+  levelImprove: 100,
 
   // parâmetros para gameover
   missStreak: 0,
@@ -141,7 +141,7 @@ function resetGame() {
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
-  GAME.nextlevel_score = 60;
+  GAME.nextlevel_score = 300;
 
   GAME.missStreak = 0;
   GAME.maxMissStreak = 5;
@@ -180,7 +180,7 @@ function changeLevel() {
   if (GAME.score >= GAME.nextlevel_score) {
 
     // se já está no último nível — não há mais para onde subir
-    if (GAME.level >= LEVEL_CONFIGS.length) return;
+    if (GAME.level >= LEVEL_CONFIGS.length) return false;
 
     const newLevel = GAME.level + 1
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
@@ -212,5 +212,9 @@ function changeLevel() {
     GAME.countdownBeat = null
     GAME.ballPosition = 0
     GAME.combo = 0
+
+    return true;
   }
+
+  return false;
 }

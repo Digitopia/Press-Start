@@ -98,11 +98,17 @@ function finishCurrentBar() {
   GAME.currentBeat = null;
 
   // o nível só avança no final de compassos, nunca a meio
-  changeLevel();
+  const levelChanged = changeLevel();
 
-  // O preview torna-se o compasso atual
-  // e é gerado um novo preview.
-  advanceToNextBar();
+  if (levelChanged) {
+    // A configuração mudou: gerar o compasso ativo e o preview
+    // com as regras do novo nível.
+    buildCurrentLevel();
+  } else {
+    // Sem mudança de nível, o preview torna-se o compasso atual
+    // e é gerado um novo preview.
+    advanceToNextBar();
+  }
 }
 
 // ============================================================

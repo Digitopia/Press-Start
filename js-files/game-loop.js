@@ -93,6 +93,10 @@ function finishCurrentBar() {
   // conta como MISS.
   markUnresolvedAsMiss(() => true);
 
+  // Se as últimas notas causaram a derrota, não avançar o
+  // compasso nem permitir que changeLevel() substitua gameover.
+  if (GAME.state === "gameover") return;
+
   GAME.barNumber++;
   GAME.eventResults.clear();
   GAME.currentBeat = null;

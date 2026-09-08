@@ -27,10 +27,10 @@ const DEFAULT_HIT_WINDOWS = { perfect: 55, good: 100, ok: 160 };
 const LANE_ORDER = ["blue", "green", "yellow", "red"];
 
 const LANES = {
-  blue: { color: [60, 150, 255], frequency: 1200 },
+  blue: { color: [24, 207, 255], frequency: 1200 },
   green: { color: [0, 255, 120], frequency: 850 },
   yellow: { color: [255, 220, 40], frequency: 550 },
-  red: { color: [255, 70, 70], frequency: 220 }
+  red: { color: [217, 44, 255], frequency: 220 }
 };
 
 // ============================================================

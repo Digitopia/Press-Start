@@ -66,10 +66,10 @@ function getBarDurationMs() {
 // GERAR EVENTOS DE UM COMPASSO
 // ============================================================
 
-function generateBarEvents() {
+function generateBarEvents({ allowNotesOnFirstBeat = true } = {}) {
   const config = getCurrentLevelConfig();
 
-  const beats = generateBar(config);
+  const beats = generateBar(config, { allowNotesOnFirstBeat });
 
   // buildEvents() espera config.beats,
   // por isso criamos uma cópia temporária da configuração.
@@ -87,7 +87,9 @@ function generateBarEvents() {
 // ============================================================
 
 function buildCurrentLevel() {
-  GAME.events = generateBarEvents();
+  // O primeiro compasso do nível começa com um tempo vazio,
+  // dando ao jogador tempo para ler a nova partitura.
+  GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
 }
 

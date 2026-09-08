@@ -3,15 +3,12 @@
 //
 // 1. Sorteia quais filas (cores) estão ativas neste compasso
 //    — sempre `laneCount` filas, escolhidas ao acaso.
-// 2. Percorre cada beat. O BEAT 1 (índice 0) fica sempre
-//    vazio: como a passagem de compasso é instantânea (sem
-//    contagem/lead-in), uma nota logo ali seria impossível
-//    de acertar a tempo. ---- ISTO ESTÁ INATIVO (COMENTADO)
-// 3. Nos restantes beats, só as posições em
-//    `allowedSubdivisions` podem ter nota, e só com
-//    probabilidade `density`.
+// 2. Percorre cada beat e decide, através de `density`, se recebe
+//    uma das células definidas em `allowedRhythms`.
+// 3. No primeiro compasso de cada nível, o beat 1 pode ser
+//    reservado como silêncio através de `allowNotesOnFirstBeat`.
 //
-// Garante sempre pelo menos uma nota no compasso.
+// No fim, tenta atingir `minNotesPerBar` usando beats vazios.
 // ============================================================
 
 function pickActiveLanes(laneCount) {
@@ -71,10 +68,12 @@ function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
 // (nenhuma subdivisão preenchida) — só esses podem receber
 // uma célula rítmica nova, para nunca misturar duas células
 // diferentes no mesmo beat.
-function getEmptyBeatIndexes(beats) {
+function getEmptyBeatIndexes(beats, allowNotesOnFirstBeat) {
   const indexes = [];
 
   for (let beatIndex = 0; beatIndex < beats.length; beatIndex++) {
+    if (beatIndex === 0 && !allowNotesOnFirstBeat) continue;
+
     const isEmpty = beats[beatIndex].pattern.every(cell => !cell);
     if (isEmpty) indexes.push(beatIndex);
   }
@@ -90,11 +89,20 @@ function shuffleInPlace(array) {
   return array;
 }
 
-function fillUntilMinimum(beats, config, activeLanes, lastLane, currentCount) {
+function fillUntilMinimum(
+  beats,
+  config,
+  activeLanes,
+  lastLane,
+  currentCount,
+  allowNotesOnFirstBeat
+) {
   const target = config.minNotesPerBar;
   if (currentCount >= target) return;
 
-  const emptyBeats = shuffleInPlace(getEmptyBeatIndexes(beats));
+  const emptyBeats = shuffleInPlace(
+    getEmptyBeatIndexes(beats, allowNotesOnFirstBeat)
+  );
   let lane = lastLane;
   let added = 0;
 
@@ -117,7 +125,7 @@ function fillUntilMinimum(beats, config, activeLanes, lastLane, currentCount) {
   }
 }
 
-function generateBar(config) {
+function generateBar(config, { allowNotesOnFirstBeat = true } = {}) {
   const activeLanes = pickActiveLanes(config.laneCount);
   const beats = [];
   let lastLane = null;
@@ -127,7 +135,8 @@ function generateBar(config) {
     const pattern = new Array(config.subdivisionsPerBeat).fill(0);
 
     // density decide SE este beat tem ritmo, ou fica em silêncio.
-    if (random() < config.density) {
+    // No primeiro compasso de cada nível, o primeiro tempo é reservado.
+    if ((beatIndex > 0 || allowNotesOnFirstBeat) && random() < config.density) {
       const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
 
       lastLane = fillRhythmCell(
@@ -144,7 +153,14 @@ function generateBar(config) {
     beats.push({ pattern });
   }
 
-  fillUntilMinimum(beats, config, activeLanes, lastLane, noteCount);
+  fillUntilMinimum(
+    beats,
+    config,
+    activeLanes,
+    lastLane,
+    noteCount,
+    allowNotesOnFirstBeat
+  );
 
   return beats;
 }

@@ -104,8 +104,6 @@ function createLevelRules({
     allowLaneChangesWithinCell,
     minNotesPerBar,
     hitWindows,
-    crossingDurationMs: (60000 / bpm) * beatsPerBar,
-    // preenchido a cada compasso por generateBar()
-    beats: []
+    crossingDurationMs: (60000 / bpm) * beatsPerBar
   };
 }

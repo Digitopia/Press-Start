@@ -294,32 +294,6 @@ function drawScorePath(
   endShape();
 }
 
-function drawScoreBall(
-  area,
-  events
-) {
-  const points =
-    getScorePathPoints(
-      area,
-      events
-    );
-
-  const point =
-    getPointOnTimedPath(
-      points,
-      GAME.ballPosition
-    );
-
-  noStroke();
-  fill(255);
-
-  circle(
-    point.x,
-    point.y,
-    GAME.ballDiameter
-  );
-}
-
 // ============================================================
 // DESENHO — BOLA NA PARTITURA ATIVA
 // ============================================================
@@ -346,27 +320,6 @@ function drawScoreBall(area, events) {
     GAME.ballDiameter
   );
 }
-
-// ============================================================
-// GEOMETRIA DAS QUATRO FILAS
-// ============================================================
-
-function getPlayArea() {
-  return { left: 65, right: width - 45, top: 145, bottom: height - 110 };
-}
-
-function getLaneY(lane) {
-  const area = getPlayArea();
-  const index = LANE_ORDER.indexOf(lane);
-
-  if (index === -1) {
-    return (area.top + area.bottom) / 2;
-  }
-
-  const spacing = (area.bottom - area.top) / (LANE_ORDER.length - 1);
-  return area.top + index * spacing;
-}
-
 
 // ============================================================
 // PONTO DA BOLA NO PERCURSO
@@ -517,52 +470,6 @@ function drawScoreLaneGuides(area) {
     );
   }
 }
-// ============================================================
-// DESENHO — GRELHA DE TEMPOS
-// ============================================================
-
-function drawBeatGrid() {
-  const config = getCurrentLevelConfig();
-  const area = getPlayArea();
-
-  for (let beat = 0; beat <= config.beatsPerBar; beat++) {
-    const t = beat / config.beatsPerBar;
-    const x = lerp(area.left, area.right, t);
-
-    stroke(beat === 0 ? 100 : 45);
-    strokeWeight(beat === 0 ? 2 : 1);
-    line(x, area.top - 25, x, area.bottom + 25);
-
-    if (beat < config.beatsPerBar) {
-      noStroke();
-      fill(90);
-      textAlign(CENTER, CENTER);
-      textSize(9);
-      text(beat + 1, x + 7, area.top - 16);
-    }
-  }
-}
-
-// ============================================================
-// DESENHO — PERCURSO
-// ============================================================
-
-function drawPath() {
-  stroke(75);
-  strokeWeight(2);
-  noFill();
-
-  beginShape();
-  for (const point of GAME.pathPoints) {
-    vertex(point.x, point.y);
-  }
-  endShape();
-}
-
-// ============================================================
-// DESENHO — NOTAS
-// ============================================================
-
 function drawScoreBeatGrid(area) {
   const config =
     getCurrentLevelConfig();
@@ -622,18 +529,6 @@ function drawScoreBeatGrid(area) {
       );
     }
   }
-}
-
-// ============================================================
-// DESENHO — BOLA
-// ============================================================
-
-function drawBall() {
-  const point = getPointOnTimedPath(GAME.pathPoints, GAME.ballPosition);
-
-  noStroke();
-  fill(255);
-  circle(point.x, point.y, GAME.ballDiameter);
 }
 
 // ============================================================

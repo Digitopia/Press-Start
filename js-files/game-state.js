@@ -16,12 +16,6 @@ const GAME = {
   // usados apenas para PREVIEW.
   nextEvents: [],
 
-  // Pontos usados para desenhar o percurso
-  pathPoints: [],
-
-  // Percurso do compasso seguinte.
-  nextPathPoints: [],
-
   // Resultado de cada evento no compasso atual
   // id -> PERFECT / GOOD / OK / MISS / WRONG
   eventResults: new Map(),
@@ -69,10 +63,10 @@ function getBarDurationMs() {
 }
 
 // ============================================================
-// GERAR DADOS DE UM COMPASSO
+// GERAR EVENTOS DE UM COMPASSO
 // ============================================================
 
-function generateBarData() {
+function generateBarEvents() {
   const config = getCurrentLevelConfig();
 
   const beats = generateBar(config);
@@ -84,14 +78,7 @@ function generateBarData() {
     beats
   };
 
-  const events = buildEvents(tempConfig);
-  const pathPoints = buildPath(events);
-
-  return {
-    beats,
-    events,
-    pathPoints
-  };
+  return buildEvents(tempConfig);
 }
 
 
@@ -100,14 +87,8 @@ function generateBarData() {
 // ============================================================
 
 function buildCurrentLevel() {
-  const current = generateBarData();
-  const next = generateBarData();
-
-  GAME.events = current.events;
-  GAME.pathPoints = current.pathPoints;
-
-  GAME.nextEvents = next.events;
-  GAME.nextPathPoints = next.pathPoints;
+  GAME.events = generateBarEvents();
+  GAME.nextEvents = generateBarEvents();
 }
 
 
@@ -118,13 +99,9 @@ function buildCurrentLevel() {
 function advanceToNextBar() {
   // O preview passa a ser o compasso atual.
   GAME.events = GAME.nextEvents;
-  GAME.pathPoints = GAME.nextPathPoints;
 
   // Gerar imediatamente um novo preview.
-  const next = generateBarData();
-
-  GAME.nextEvents = next.events;
-  GAME.nextPathPoints = next.pathPoints;
+  GAME.nextEvents = generateBarEvents();
 }
 
 // ============================================================
@@ -201,7 +178,7 @@ function changeLevel() {
 
     GAME.missStreak = 0
 
-    console.log(`next level, yay! Go to level ${GAME.nextLevel} now you need to reach a score of ${GAME.nextlevel_score} and a como of x${GAME.nextlevel_combo}... GO!`)
+    console.log(`Level ${GAME.level}. Reach a score of ${GAME.nextlevel_score} to advance.`)
 
     GAME.state = "nextlevel"
 

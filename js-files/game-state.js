@@ -44,7 +44,6 @@ const GAME = {
 
   // Clock musical
   barStartAudioTime: null,
-  pausedElapsedSeconds: 0,
 
   currentBeat: null,
 
@@ -150,7 +149,6 @@ function resetGame() {
   GAME.judgementTimer = 0;
 
   GAME.barStartAudioTime = null;
-  GAME.pausedElapsedSeconds = 0;
 
   GAME.currentBeat = null;
   GAME.eventResults.clear();

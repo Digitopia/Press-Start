@@ -298,25 +298,6 @@ function registerStrayHit() {
   registerFailure("MISS", 400, [110, 60, 0.07]);
 }
 
-
-// ============================================================
-// PLAY / PAUSE — ESTA FUNÇÃO DE MOMENTO NUNCA É CHAMADA (INATIVO)
-// ============================================================
-
-function togglePlay() {
-  ensureAudioContext();
-
-  if (GAME.state === "playing") {
-    GAME.pausedElapsedSeconds = audioCtx.currentTime - GAME.barStartAudioTime;
-    GAME.state = "paused";
-    return;
-  }
-
-  GAME.state = "playing";
-  GAME.barStartAudioTime = audioCtx.currentTime - GAME.pausedElapsedSeconds;
-  GAME.currentBeat = null;
-}
-
 // ============================================================
 // COUNTDOWN
 // ============================================================

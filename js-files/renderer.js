@@ -662,7 +662,7 @@ function drawFooter() {
   textAlign(CENTER, CENTER);
   textSize(7);
   fill(100);
-  text("1 BLUE   2 GREEN   3 YELLOW   4 RED   ·   SPACE START/PAUSE   ·   ↑↓ LEVEL", width / 2, height - 25);
+  text("1 BLUE   2 GREEN   3 YELLOW   4 RED   ·   SPACE START   ·   R RESTART   ·   ↑↓ LEVEL", width / 2, height - 25);
 }
 
 function drawGameArea() {

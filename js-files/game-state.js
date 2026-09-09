@@ -16,6 +16,11 @@ const GAME = {
   // usados apenas para PREVIEW.
   nextEvents: [],
 
+  // Lado do ecrã onde está o compasso ativo.
+  // Alterna a cada compasso: o preview passa a ativo sem
+  // mudar de sítio, e o preview novo nasce do outro lado.
+  activeSide: "left",
+
   // Resultado de cada evento no compasso atual
   // id -> PERFECT / GOOD / OK / MISS / WRONG
   eventResults: new Map(),
@@ -181,6 +186,10 @@ function buildCurrentLevel() {
   // dando ao jogador tempo para ler a nova partitura.
   GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
+
+  // As duas partituras são refeitas de raiz e não há nada a
+  // herdar da direita, por isso a leitura recomeça à esquerda.
+  GAME.activeSide = "left";
 }
 
 
@@ -194,6 +203,10 @@ function advanceToNextBar() {
 
   // Gerar imediatamente um novo preview.
   GAME.nextEvents = generateBarEvents();
+
+  // O preview vira ativo sem sair do lugar, portanto o lado
+  // ativo troca e o preview novo ocupa a área libertada.
+  GAME.activeSide = GAME.activeSide === "left" ? "right" : "left";
 }
 
 // ============================================================

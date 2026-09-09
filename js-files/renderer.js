@@ -72,7 +72,7 @@ function drawScore(
 
   // Preview mais discreto.
   drawingContext.globalAlpha =
-    isActive ? 1.0 : 0.55;
+    isActive ? 1.0 : 0.35;
 
   drawScoreLabel(area, isActive);
   drawScoreLaneGuides(area);
@@ -401,14 +401,14 @@ function drawHeader() {
   // TÍTULO
   // ----------------------------------------------------------
 
-  const titleY = 28;
+  const titleY = 34;
 
   noStroke();
 
   // Nome do jogo, centrado e sozinho.
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
-  textSize(18);
+  textSize(22);
   fill(235);
 
   text("PRESS START", width / 2, titleY);
@@ -718,19 +718,33 @@ function drawFooter() {
   pop();
 }
 
+// ============================================================
+// DESENHO — AS DUAS PARTITURAS
+//
+// O compasso ativo não muda de sítio quando passa a preview:
+// a área que era preview torna-se a ativa, e o preview novo
+// nasce na área que acabou de ser tocada.
+// ============================================================
+
 function drawGameArea() {
   const areas =
     getScoreAreas();
 
+  const activeArea =
+    GAME.activeSide === "left" ? areas.left : areas.right;
+
+  const previewArea =
+    GAME.activeSide === "left" ? areas.right : areas.left;
+
   drawScore(
-    areas.left,
+    activeArea,
     GAME.events,
     true,
     GAME.eventResults
   );
 
   drawScore(
-    areas.right,
+    previewArea,
     GAME.nextEvents,
     false,
     null

@@ -273,7 +273,7 @@ function registerSuccessfulHit(event, judgement) {
 function registerFailure(label, timerMs, beep = null) {
   GAME.combo = 0;
 
-  if (label === "MISS" || label === "WRONG") {
+  if (label === "MISS" || label === "WRONG ROW") {
     GAME.missStreak++;
   }
 

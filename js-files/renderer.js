@@ -401,15 +401,18 @@ function drawHeader() {
   // TÍTULO
   // ----------------------------------------------------------
 
+  const titleY = 28;
+
   noStroke();
+
+  // Nome do jogo, centrado e sozinho.
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
   textSize(18);
   fill(235);
 
-  text(`PRESS START - LEVEL ${GAME.level}`, width / 2, 28);
+  text("PRESS START", width / 2, titleY);
 
-  textStyle(NORMAL);
 
   // ----------------------------------------------------------
   // PROGRESSO NO NÍVEL
@@ -417,7 +420,7 @@ function drawHeader() {
 
   drawHudMeter(
     HUD_LAYOUT.margin,
-    "PROGRESS",
+    `LEVEL ${GAME.level}`,
     LEFT,
     getLevelProgress(),
     [190]

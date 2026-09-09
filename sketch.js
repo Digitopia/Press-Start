@@ -39,5 +39,7 @@ function draw() {
 
   drawCountdownOverlay();
   drawNextLevelOverlay();
-  drawGameOverOverlay()
+  drawLiveLostOverlay();
+  drawGameOverOverlay();
+
 }

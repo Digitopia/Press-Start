@@ -625,6 +625,10 @@ function drawCountdownOverlay() {
   pop();
 }
 
+// ============================================================
+// NEXT LEVEL – OVERLAY
+// ============================================================
+
 function drawNextLevelOverlay() {
   if (GAME.state !== "nextlevel" || GAME.countdownBeat === null) {
     return;
@@ -667,9 +671,9 @@ function drawNextLevelOverlay() {
     height / 2 + 56
   );
 
-  // ----------------------------------------------------------
+
   // HUD — informação do jogo numa única linha
-  // ----------------------------------------------------------
+
   textStyle(NORMAL)
   textAlign(CENTER, CENTER);
   textSize(26);
@@ -691,6 +695,79 @@ function drawNextLevelOverlay() {
 
   pop();
 }
+
+// ============================================================
+// LIFE LOST – OVERLAY
+// ============================================================
+
+
+function drawLiveLostOverlay() {
+  if (GAME.state !== "lifelost" || GAME.countdownBeat === null) {
+    return;
+  }
+
+  const config = getCurrentLevelConfig();
+
+  const number =
+    config.beatsPerBar - GAME.countdownBeat;
+
+  push();
+
+  // Fundo semi-transparente
+  noStroke();
+  fill(0, 140);
+  rect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  // Número
+  fill(255, 70, 70);
+  textAlign(CENTER, CENTER);
+  textSize(56);
+
+  const levelText = `LIFE LOST`
+
+  text(
+    levelText,
+    width / 2,
+    height / 2 - 56
+  );
+
+  textSize(72);
+  text(
+    number,
+    width / 2,
+    height / 2 + 56
+  );
+
+
+  // HUD — informação do jogo numa única linha
+
+  textStyle(NORMAL)
+  textAlign(CENTER, CENTER);
+  textSize(18);
+
+  const hudY = height / 2 + height / 4;
+
+  const items = [
+    `RESETING LEVEL...`,
+    `LIVES x${GAME.lives}`
+  ];
+
+  const left = width / 5;
+  const right = width - width / 5;
+
+  for (let i = 0; i < items.length; i++) {
+    const x = map(i, 0, items.length - 1, left, right);
+    text(items[i], x, hudY);
+  }
+
+  pop();
+}
+
 
 // ============================================================
 // GAME OVER – OVERLAY

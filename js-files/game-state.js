@@ -119,11 +119,20 @@ function loseLife() {
 
   // Ainda há vidas: a barra volta a encher e o jogo continua.
   GAME.health = HEALTH.max;
+  GAME.state = "lifelost";
 
-  GAME.lastJudgement = "LIFE LOST";
-  GAME.judgementTimer = 900;
+  // O overlay já anuncia a perda de vida —
+  // limpar o feedback da falha que a causou.
+  GAME.lastJudgement = "";
+  GAME.judgementTimer = 0;
 
   playBeep(140, 220, 0.18);
+
+  // Copiado do startCountdown() 
+  GAME.countdownStartAudioTime = audioCtx.currentTime
+  GAME.countdownBeat = null
+  GAME.ballPosition = 0
+  GAME.combo = 0
 }
 
 // Usada no início de cada nível.

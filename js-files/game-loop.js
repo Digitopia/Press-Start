@@ -6,7 +6,7 @@ function updateGame() {
 
   if (!audioCtx) return;
 
-  if (GAME.state === "countdown" || GAME.state === "nextlevel") {
+  if (GAME.state === "countdown" || GAME.state === "nextlevel" || GAME.state === "lifelost") {
     updateCountdown();
     return;
   }
@@ -30,6 +30,11 @@ function updateGame() {
 
   while (elapsed >= durationSeconds) {
     finishCurrentBar();
+
+    // Perder uma vida (ou o jogo) interrompe o compasso:
+    // o relógio é reposto no fim da contagem.
+    if (GAME.state !== "playing") return;
+
     GAME.barStartAudioTime += durationSeconds;
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
@@ -82,9 +87,10 @@ function finishCurrentBar() {
   // conta como MISS.
   markUnresolvedAsMiss(() => true);
 
-  // Se as últimas notas causaram a derrota, não avançar o
-  // compasso nem permitir que changeLevel() substitua gameover.
-  if (GAME.state === "gameover") return;
+  // Se as últimas notas custaram uma vida (ou o jogo), não
+  // avançar o compasso nem deixar que changeLevel() substitua
+  // o estado que acabou de ser definido.
+  if (GAME.state !== "playing") return;
 
   GAME.barNumber++;
   GAME.eventResults.clear();

@@ -4,27 +4,14 @@
 
 function updateGame() {
 
-
-
   if (!audioCtx) return;
 
   if (GAME.state === "countdown" || GAME.state === "nextlevel") {
     updateCountdown();
     return;
-
   }
 
-  if (
-
-    GAME.state !== "playing" ||
-    GAME.barStartAudioTime === null
-
-  ) {
-
-    return;
-
-  }
-  if (GAME.state !== "playing" || !audioCtx || GAME.barStartAudioTime === null) {
+  if (GAME.state !== "playing" || GAME.barStartAudioTime === null) {
     return;
   }
 
@@ -62,22 +49,24 @@ function updateGame() {
 //
 // Usada tanto no fim do compasso (tudo o que falta é MISS)
 // como durante o compasso (só o que já passou da janela OK).
+//
+// O dano é proporcional ao número de notas falhadas de uma vez.
 // ============================================================
 
 function markUnresolvedAsMiss(shouldMiss) {
-  let foundMiss = false;
+  let missCount = 0;
 
   for (const event of GAME.events) {
     if (GAME.eventResults.has(event.id)) continue;
 
     if (shouldMiss(event)) {
       GAME.eventResults.set(event.id, "MISS");
-      foundMiss = true;
+      missCount++;
     }
   }
 
-  if (foundMiss) {
-    registerFailure("MISS", 500);
+  if (missCount > 0) {
+    registerFailure("miss", missCount);
   }
 }
 
@@ -214,7 +203,7 @@ function tryLaneHit(lane) {
   // Não existe sequer uma nota perto.
   // Isto pune "button mashing".
   if (!closestEvent || Math.abs(closestDifference) > okWindow) {
-    registerStrayHit();
+    registerFailure("stray");
     return;
   }
 
@@ -224,7 +213,7 @@ function tryLaneHit(lane) {
 
   if (closestEvent.lane !== lane) {
     GAME.eventResults.set(closestEvent.id, "WRONG");
-    registerWrongLane();
+    registerFailure("wrong");
     return;
   }
 
@@ -252,8 +241,16 @@ function registerSuccessfulHit(event, judgement) {
 
   GAME.score += basePoints * GAME.combo;   // points x combo
 
-  if (GAME.missStreak !== 0) {
-    GAME.missStreak--
+  // ==========================================================
+  // CURA
+  //
+  // Porta rígida: abaixo de comboHealThreshold acertar não
+  // recupera nada. A partir daí a cura é fixa, definida só
+  // pelo julgamento — o combo abre a porta, não a alarga.
+  // ==========================================================
+
+  if (GAME.combo >= HEALTH.comboHealThreshold) {
+    healPlayer(HEALTH.heal[judgement] ?? 0);
   }
 
   GAME.lastJudgement = judgement;
@@ -267,35 +264,29 @@ function registerSuccessfulHit(event, judgement) {
 // ERROS
 //
 // registerFailure centraliza o padrão comum: zera o combo,
-// define o texto/timer do feedback e, opcionalmente, toca um beep.
+// mostra o feedback definido em FAILURES, toca o beep
+// e aplica o dano à health.
+//
+// count multiplica o dano — usado quando várias notas
+// falham ao mesmo tempo no fim do compasso.
+//
+// O dano é aplicado no fim porque damagePlayer() pode
+// gastar uma vida e sobrepor o texto de feedback.
 // ============================================================
 
-function registerFailure(label, timerMs, beep = null) {
+function registerFailure(type, count = 1) {
+  const failure = FAILURES[type];
+
   GAME.combo = 0;
 
-  if (label === "MISS" || label === "WRONG ROW") {
-    GAME.missStreak++;
+  GAME.lastJudgement = failure.label;
+  GAME.judgementTimer = failure.timer;
+
+  if (failure.beep) {
+    playBeep(...failure.beep);
   }
 
-  if (GAME.missStreak === GAME.maxMissStreak) {
-    GAME.state = 'gameover'
-    GAME.gameOverStartFrame = frameCount;
-  }
-
-  GAME.lastJudgement = label;
-  GAME.judgementTimer = timerMs;
-
-  if (beep) {
-    playBeep(...beep);
-  }
-}
-
-function registerWrongLane() {
-  registerFailure("WRONG ROW", 550, [110, 90, 0.12]);
-}
-
-function registerStrayHit() {
-  registerFailure("MISS", 400, [110, 60, 0.07]);
+  damagePlayer(failure.damage * count);
 }
 
 // ============================================================

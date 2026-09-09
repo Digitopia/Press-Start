@@ -402,7 +402,8 @@ function drawHeader() {
     `SCORE ${GAME.score}`,
     `COMBO x${GAME.combo}`,
     `BEST x${GAME.maxCombo}`,
-    `LIVES x${GAME.maxMissStreak - GAME.missStreak}`
+    `HEALTH ${floor(GAME.health)}`,
+    `LIVES x${GAME.lives}`
   ];
 
   // Distribuir uniformemente pela largura do ecrã.
@@ -677,7 +678,7 @@ function drawNextLevelOverlay() {
 
   const items = [
     `${config.bpm} BPM`,
-    `LIVES x${GAME.maxMissStreak - GAME.missStreak}`
+    `LIVES x${GAME.lives}`
   ];
 
   const left = width / 4;

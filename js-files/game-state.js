@@ -29,9 +29,23 @@ const GAME = {
   nextlevel_score: 300,
   levelImprove: 100,
 
-  // parâmetros para gameover
-  missStreak: 0,
-  maxMissStreak: 5,
+  // ----------------------------------------------------------
+  // VIDA
+  //
+  // health desce com falhas e sobe com acertos.
+  // Chegando a 0 perde-se uma vida e a barra volta a encher.
+  // Sem vidas -> gameover.
+  //
+  // Estes valores são substituídos por resetGame() a partir
+  // das healthRules do nível — aqui ficam só valores seguros
+  // para antes do primeiro reset.
+  // ----------------------------------------------------------
+  health: 100,
+  lives: 3,
+  maxLives: 3,
+
+  // Frame em que a última vida foi perdida (flash da barra).
+  lifeLostFrame: null,
 
   lastJudgement: "",
   judgementTimer: 0,
@@ -60,6 +74,62 @@ function getCurrentLevelConfig() {
 
 function getBarDurationMs() {
   return getCurrentLevelConfig().crossingDurationMs;
+}
+
+// ============================================================
+// VIDA / HEALTH
+//
+// Regras em HEALTH e FAILURES (main-config.js),
+// iguais em todos os níveis.
+// ============================================================
+
+function healPlayer(amount) {
+  if (GAME.state === "gameover") return;
+
+  GAME.health = min(HEALTH.max, GAME.health + amount);
+}
+
+function damagePlayer(amount) {
+  if (GAME.state === "gameover") return;
+
+  GAME.health = max(0, GAME.health - amount);
+
+  if (GAME.health <= 0) {
+    loseLife();
+  }
+}
+
+// A barra chegou a zero: gasta-se uma vida.
+function loseLife() {
+  GAME.lives--;
+  GAME.lifeLostFrame = frameCount;
+  GAME.combo = 0;
+
+  // Já não há vidas — fim de jogo.
+  if (GAME.lives <= 0) {
+    GAME.lives = 0;
+    GAME.health = 0;
+
+    GAME.state = "gameover";
+    GAME.gameOverStartFrame = frameCount;
+
+    playBeep(90, 400, 0.2);
+    return;
+  }
+
+  // Ainda há vidas: a barra volta a encher e o jogo continua.
+  GAME.health = HEALTH.max;
+
+  GAME.lastJudgement = "LIFE LOST";
+  GAME.judgementTimer = 900;
+
+  playBeep(140, 220, 0.18);
+}
+
+// Usada no início de cada nível.
+function resetHealth() {
+  GAME.health = HEALTH.max;
+  GAME.lifeLostFrame = null;
 }
 
 // ============================================================
@@ -121,8 +191,11 @@ function resetGame() {
 
   GAME.nextlevel_score = 300;
 
-  GAME.missStreak = 0;
-  GAME.maxMissStreak = 5;
+  // vidas e barra a partir da config global
+  GAME.maxLives = HEALTH.lives;
+  GAME.lives = HEALTH.lives;
+  GAME.health = HEALTH.max;
+  GAME.lifeLostFrame = null;
 
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
@@ -169,16 +242,9 @@ function changeLevel() {
     // pois precisa de maior pontuação para avançar no nível seguinte
     GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * floor(GAME.maxCombo / 2)
 
-
-    // sempre que se passa de nível o nº máximo de falhas sucessivas para perder aumenta vezes 
-    // para se perder aumenta um, até um máximo de 10
-    // e o missStreak faz reset
-
-    if (GAME.maxMissStreak !== 10) {
-      GAME.maxMissStreak++
-    }
-
-    GAME.missStreak = 0
+    // A barra de vida volta ao máximo no início de cada nível.
+    // As vidas já gastas NÃO são devolvidas.
+    resetHealth();
 
     console.log(`Level ${GAME.level}. Reach a score of ${GAME.nextlevel_score} to advance.`)
 

@@ -20,6 +20,76 @@ const SCORE_LAYOUT = {
 const DEFAULT_HIT_WINDOWS = { perfect: 55, good: 100, ok: 160 };
 
 // ============================================================
+// VIDA / HEALTH
+//
+// A barra de health desce a cada falha e sobe a cada acerto.
+// Quando chega a zero perde-se UMA vida e a barra volta a
+// encher. Sem vidas -> game over.
+//
+// A health volta ao máximo no início de cada nível.
+// Estes valores são iguais em todos os níveis.
+// ============================================================
+
+const HEALTH = {
+  // tamanho da barra
+  max: 100,
+
+  // vidas iniciais
+  lives: 3,
+
+  // Cura de cada acerto.
+  // OK vale 0: acertar tarde ou cedo mantém a barra,
+  // não a recupera.
+  heal: {
+    OK: 0,
+    GOOD: 1,
+    PERFECT: 2
+  },
+
+  // Só se cura a partir deste combo.
+  // Abaixo disto acertar não recupera nada.
+  comboHealThreshold: 3
+};
+
+// ============================================================
+// FALHAS
+//
+// Cada tipo de falha define, num sítio só:
+//   label    texto do feedback
+//   timer    duração do feedback em ms
+//   damage   health perdida
+//   beep     som opcional [freq, ms, volume]
+//
+// É aqui que se afina a dificuldade da barra de vida.
+// ============================================================
+
+const FAILURES = {
+  // nota que passou sem ser tocada
+  miss: {
+    label: "MISS",
+    timer: 500,
+    damage: 10,
+    beep: null
+  },
+
+  // tempo certo, fila errada
+  wrong: {
+    label: "WRONG ROW",
+    timer: 550,
+    damage: 8,
+    beep: [110, 90, 0.12]
+  },
+
+  // bateu sem nota nenhuma por perto
+  stray: {
+    label: "MISS",
+    timer: 400,
+    damage: 5,
+    beep: [110, 60, 0.07]
+  }
+};
+
+// ============================================================
 // QUATRO FILAS / INSTRUMENTOS
 // A ordem corresponde às quatro filas físicas do MIDI Fighter
 // ============================================================

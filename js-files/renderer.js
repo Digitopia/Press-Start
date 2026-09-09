@@ -417,7 +417,7 @@ function drawHeader() {
 
   drawHudMeter(
     HUD_LAYOUT.margin,
-    "LEVEL",
+    "PROGRESS",
     LEFT,
     getLevelProgress(),
     [190]

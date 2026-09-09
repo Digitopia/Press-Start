@@ -364,10 +364,38 @@ function getPointOnTimedPath(points, t) {
 
 // ============================================================
 // DESENHO — HEADER
+//
+// A linha do HUD é um bloco de altura fixa com três elementos
+// alinhados: progresso do nível à esquerda, vidas ao centro,
+// health à direita.
+//
+// Cada barra tem a legenda no topo do bloco e a barra colada
+// ao fundo. Os corações ocupam a altura toda do bloco, para os
+// três conjuntos ficarem alinhados em cima e em baixo.
+//
+// Os números vivem no footer e nos overlays.
 // ============================================================
 
+const HUD_LAYOUT = {
+  margin: 90,
+
+  // bloco
+  rowTop: 78,
+  rowHeight: 24,
+
+  // barras
+  barWidth: 260,
+  barHeight: 6,
+  labelSize: 7,
+
+  // lado de cada "pixel" dos corações.
+  // 6 linhas x 4 = 24, a altura do bloco.
+  heartPixel: 4,
+  heartGap: 10
+};
+
 function drawHeader() {
-  const config = getCurrentLevelConfig();
+  push();
 
   // ----------------------------------------------------------
   // TÍTULO
@@ -379,51 +407,165 @@ function drawHeader() {
   textSize(18);
   fill(235);
 
-  text(
-    "PRESS START",
-    width / 2,
-    28
+  text(`PRESS START - LEVEL ${GAME.level}`, width / 2, 28);
+
+  textStyle(NORMAL);
+
+  // ----------------------------------------------------------
+  // PROGRESSO NO NÍVEL
+  // ----------------------------------------------------------
+
+  drawHudMeter(
+    HUD_LAYOUT.margin,
+    "LEVEL",
+    LEFT,
+    getLevelProgress(),
+    [190]
   );
 
   // ----------------------------------------------------------
-  // HUD — informação do jogo numa única linha
+  // VIDAS
   // ----------------------------------------------------------
 
-  textStyle(NORMAL);
-  textSize(8);
-  fill(145);
+  drawLivesHearts();
 
-  const hudY = 65;
+  // ----------------------------------------------------------
+  // HEALTH
+  // ----------------------------------------------------------
 
-  const items = [
-    `LEVEL ${GAME.level}`,
-    `${config.bpm} BPM`,
-    `BAR ${GAME.barNumber}`,
-    `SCORE ${GAME.score}`,
-    `COMBO x${GAME.combo}`,
-    `BEST x${GAME.maxCombo}`,
-    `HEALTH ${floor(GAME.health)}`,
-    `LIVES x${GAME.lives}`
-  ];
+  drawHudMeter(
+    width - HUD_LAYOUT.margin - HUD_LAYOUT.barWidth,
+    "HEALTH",
+    RIGHT,
+    GAME.health / HEALTH.max,
+    getHealthColor()
+  );
 
-  // Distribuir uniformemente pela largura do ecrã.
-  const left = 90;
-  const right = width - 90;
+  pop();
+}
 
-  for (let i = 0; i < items.length; i++) {
-    const x = map(
-      i,
-      0,
-      items.length - 1,
-      left,
-      right
-    );
+// Legenda no topo do bloco + barra colada ao fundo.
+// labelAlign alinha a legenda pela ponta exterior da barra.
+function drawHudMeter(x, label, labelAlign, ratio, color) {
+  noStroke();
 
-    text(
-      items[i],
-      x,
-      hudY
-    );
+  textSize(HUD_LAYOUT.labelSize);
+  textAlign(labelAlign, TOP);
+  fill(120);
+
+  text(
+    label,
+    labelAlign === RIGHT ? x + HUD_LAYOUT.barWidth : x,
+    HUD_LAYOUT.rowTop
+  );
+
+  drawHudBar(
+    x,
+    HUD_LAYOUT.rowTop + HUD_LAYOUT.rowHeight - HUD_LAYOUT.barHeight,
+    HUD_LAYOUT.barWidth,
+    HUD_LAYOUT.barHeight,
+    ratio,
+    color
+  );
+}
+
+// Fração do caminho entre o alvo do nível anterior
+// e o alvo do nível atual.
+function getLevelProgress() {
+  const span = GAME.nextlevel_score - GAME.levelStartScore;
+  if (span <= 0) return 1;
+
+  return constrain(
+    (GAME.score - GAME.levelStartScore) / span,
+    0,
+    1
+  );
+}
+
+function getHealthColor() {
+  const ratio = GAME.health / HEALTH.max;
+
+  if (ratio > 0.5) return [0, 255, 120];
+  if (ratio > 0.25) return [255, 220, 40];
+  return [255, 70, 70];
+}
+
+function drawHudBar(x, y, w, h, ratio, color) {
+  const filled = constrain(ratio, 0, 1) * w;
+
+  // Fundo.
+  noStroke();
+  fill(32);
+  rect(x, y, w, h);
+
+  // Preenchimento.
+  fill(...color);
+  rect(x, y, filled, h);
+
+  // Contorno.
+  noFill();
+  stroke(70);
+  strokeWeight(1);
+  rect(x, y, w, h);
+}
+
+// ============================================================
+// DESENHO — VIDAS
+//
+// Coração em pixel art, a condizer com a fonte.
+// ============================================================
+
+const HEART_PIXELS = [
+  "0110110",
+  "1111111",
+  "1111111",
+  "0111110",
+  "0011100",
+  "0001000"
+];
+
+function drawHeart(x, y, pixel, color) {
+  noStroke();
+  fill(...color);
+
+  for (let row = 0; row < HEART_PIXELS.length; row++) {
+    const line = HEART_PIXELS[row];
+
+    for (let col = 0; col < line.length; col++) {
+      if (line[col] !== "1") continue;
+
+      rect(
+        x + col * pixel,
+        y + row * pixel,
+        pixel,
+        pixel
+      );
+    }
+  }
+}
+
+function drawLivesHearts() {
+  const pixel = HUD_LAYOUT.heartPixel;
+
+  const heartWidth = HEART_PIXELS[0].length * pixel;
+  const heartHeight = HEART_PIXELS.length * pixel;
+
+  const totalWidth =
+    GAME.maxLives * heartWidth +
+    (GAME.maxLives - 1) * HUD_LAYOUT.heartGap;
+
+  const startX = width / 2 - totalWidth / 2;
+
+  // Centrado na altura do bloco.
+  const y =
+    HUD_LAYOUT.rowTop +
+    (HUD_LAYOUT.rowHeight - heartHeight) / 2;
+
+  for (let i = 0; i < GAME.maxLives; i++) {
+    const x = startX + i * (heartWidth + HUD_LAYOUT.heartGap);
+
+    // Vida gasta fica como silhueta apagada.
+    drawHeart(x, y, pixel, i < GAME.lives ? [255, 70, 70] : [55]);
   }
 }
 
@@ -551,14 +693,26 @@ function drawJudgement() {
 }
 
 // ============================================================
-// FOOTER / LEGENDA DE TESTE
+// FOOTER
+//
+// Score e combo, centrados.
 // ============================================================
 
 function drawFooter() {
+  push();
+
+  noStroke();
   textAlign(CENTER, CENTER);
-  textSize(7);
-  fill(100);
-  text("1 BLUE   2 GREEN   3 YELLOW   4 RED   ·   SPACE START   ·   R RESTART   ·   ↑↓ LEVEL", width / 2, height - 25);
+  textSize(10);
+  fill(200);
+
+  text(
+    `SCORE ${GAME.score}   ·   COMBO x${GAME.combo}`,
+    width / 2,
+    height - 30
+  );
+
+  pop();
 }
 
 function drawGameArea() {
@@ -748,22 +902,11 @@ function drawLiveLostOverlay() {
 
   textStyle(NORMAL)
   textAlign(CENTER, CENTER);
-  textSize(18);
+  textSize(16);
 
   const hudY = height / 2 + height / 4;
 
-  const items = [
-    `RESETING LEVEL...`,
-    `LIVES x${GAME.lives}`
-  ];
-
-  const left = width / 5;
-  const right = width - width / 5;
-
-  for (let i = 0; i < items.length; i++) {
-    const x = map(i, 0, items.length - 1, left, right);
-    text(items[i], x, hudY);
-  }
+  text(`RESETING LEVEL... LIVES x${GAME.lives}`, width / 2, hudY);
 
   pop();
 }

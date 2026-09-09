@@ -7,8 +7,8 @@ const SCREEN_SIZE = { width: 960, height: 540 };
 
 const SCORE_LAYOUT = {
   marginX: 50,
-  top: 150,
-  bottom: 430,
+  top: 175,
+  bottom: 435,
   gap: 50
 };
 

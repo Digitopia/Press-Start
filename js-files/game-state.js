@@ -29,6 +29,10 @@ const GAME = {
   nextlevel_score: 300,
   levelImprove: 50,
 
+  // Pontuação em que o nível atual começou.
+  // Serve de base à barra de progresso do HUD.
+  levelStartScore: 0,
+
   // ----------------------------------------------------------
   // VIDA
   //
@@ -206,6 +210,7 @@ function resetGame() {
   GAME.barNumber = 1;
 
   GAME.nextlevel_score = 300;
+  GAME.levelStartScore = 0;
 
   // vidas e barra a partir da config global
   GAME.maxLives = HEALTH.lives;
@@ -251,6 +256,10 @@ function changeLevel() {
     const newLevel = GAME.level + 1
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
     GAME.level = nextLevel;
+
+    // A barra de progresso mede o caminho entre o alvo anterior
+    // e o novo, por isso guardamos o antigo antes de o substituir.
+    GAME.levelStartScore = GAME.nextlevel_score
 
     // sempre que se passa de nível é calculado numa nova pontuação necessária para avançar
     GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * GAME.level

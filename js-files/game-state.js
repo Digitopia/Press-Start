@@ -27,7 +27,7 @@ const GAME = {
 
   // parâmetros iniciais para se avançar de nível
   nextlevel_score: 300,
-  levelImprove: 100,
+  levelImprove: 50,
 
   // ----------------------------------------------------------
   // VIDA
@@ -252,11 +252,8 @@ function changeLevel() {
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
     GAME.level = nextLevel;
 
-    // sempre que se passa de nível é calculado numa nova pontuação necessária para avançar: 
-    // o valor extra à pontuação necessária atual é multiplicado pelo best combo do jogador
-    // quanto melhor for o jogador, mais difícil o jogo se torna, 
-    // pois precisa de maior pontuação para avançar no nível seguinte
-    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * floor(GAME.maxCombo / 2)
+    // sempre que se passa de nível é calculado numa nova pontuação necessária para avançar
+    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * GAME.level
 
     // A barra de vida volta ao máximo no início de cada nível.
     // As vidas já gastas NÃO são devolvidas.

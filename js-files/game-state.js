@@ -133,6 +133,13 @@ function loseLife() {
   GAME.countdownBeat = null
   GAME.ballPosition = 0
   GAME.combo = 0
+
+  // Recomeçar o compasso: descartar o que estava a meio
+  // e gerar uma partitura nova para o compasso e o preview.
+  GAME.eventResults.clear();
+  GAME.currentBeat = null;
+  buildCurrentLevel();
+  // fazer reset com buildCurrentLevel() pq gera o compasso ativo com allowNotesOnFirstBeat: false, ou seja, o primeiro tempo fica em silêncio.
 }
 
 // Usada no início de cada nível.

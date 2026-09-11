@@ -112,6 +112,8 @@ function damagePlayer(amount) {
 
 // A barra chegou a zero: gasta-se uma vida.
 function loseLife() {
+  stopMusicTransport();
+
   GAME.lives--;
   GAME.lifeLostFrame = frameCount;
   GAME.combo = 0;
@@ -217,6 +219,8 @@ function advanceToNextBar() {
 // ============================================================
 
 function resetGame({ keepLevel = false } = {}) {
+  stopMusicTransport();
+
   if (!keepLevel) {
     GAME.level = 1;
   }
@@ -275,6 +279,8 @@ function changeLevel() {
 
     // se já está no último nível — não há mais para onde subir
     if (GAME.level >= LEVEL_CONFIGS.length) return false;
+
+    stopMusicTransport();
 
     const newLevel = GAME.level + 1
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);

@@ -39,6 +39,8 @@ function updateGame() {
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
+  updateMusicTransport();
+
   GAME.ballPosition = constrain(elapsed / durationSeconds, 0, 1);
 
   updateBeat();
@@ -369,5 +371,7 @@ function updateCountdown() {
       null;
 
     GAME.currentBeat = null;
+
+    startMusicTransport(GAME.barStartAudioTime);
   }
 }

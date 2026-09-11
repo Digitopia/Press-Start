@@ -83,6 +83,104 @@ function createHitWindows({
 }
 
 // ============================================================
+// MÚSICA
+//
+// Os números são notas MIDI e são convertidos em frequência
+// apenas na camada de áudio. As progressões contêm chaves do
+// banco de acordes; o último esquema aplica-se ao nível 5 e aos
+// níveis seguintes.
+// ============================================================
+
+const MUSIC = {
+  masterVolume: 0.18,
+  scheduleAheadSeconds: 0.12,
+
+  chordBank: {
+    cm: {
+      name: "Cm",
+      root: 36,
+      fifth: 43,
+      notes: [60, 63, 67],
+      repeatedNotes: [60, 62, 63, 67, 70] // C, D, Eb, G, Bb
+    },
+    fm: {
+      name: "Fm",
+      root: 29,
+      fifth: 36,
+      notes: [60, 65, 68],
+      repeatedNotes: [60, 63, 65, 67, 68] // C, Eb, F, G, Ab
+    },
+    ab: {
+      name: "Ab",
+      root: 32,
+      fifth: 39,
+      notes: [60, 63, 68],
+      repeatedNotes: [60, 63, 67, 68, 70] // C, Eb, G, Ab, Bb
+    },
+    g: {
+      name: "G",
+      root: 31,
+      fifth: 38,
+      notes: [59, 62, 67],
+      repeatedNotes: [59, 62, 65, 67, 69] // B, D, F, G, A
+    }
+  },
+
+  progressionsByLevel: [
+    ["cm"],
+    ["cm"],
+    ["cm", "cm", "fm", "fm"],
+    ["cm", "cm", "fm", "g"],
+    ["cm", "ab", "fm", "g"]
+  ],
+
+  bass: {
+    downbeatDurationBeats: 0.8,
+    eighthNoteDurationBeats: 0.38,
+    volume: 0.18,
+    oscillator: "triangle"
+  },
+
+  blockChords: {
+    durationRatio: 0.92,
+    volume: 0.035,
+    oscillator: "triangle"
+  },
+
+  repeatedNotes: [
+    {
+      everyBeats: 0.25,
+      changeEveryBeats: [2, 4],
+      durationBeats: 0.18,
+      octaveOffset: 0,
+      volumeRange: [0.018, 0.032],
+      oscillator: "sine"
+    },
+    {
+      everyBeats: 0.25,
+      changeEveryBeats: [1, 2],
+      durationBeats: 0.18,
+      octaveOffset: 12,
+      volumeRange: [0.008, 0.020],
+      oscillator: "triangle"
+    }
+  ],
+
+  melody: {
+    firstNoteBeat: [0, 1],
+    gapBeats: [1, 2],
+    durationBeats: 1.1,
+    octaveOffset: 24,
+    volume: 0.036,
+    partials: [
+      { ratio: 1, volume: 1 },
+      { ratio: 2.01, volume: 0.32 },
+      { ratio: 3.98, volume: 0.12 }
+    ]
+  }
+};
+
+// ============================================================
 // VIDA / HEALTH
 //
 // A barra de health desce a cada falha e sobe a cada acerto.

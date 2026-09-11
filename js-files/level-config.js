@@ -15,7 +15,11 @@ const LEVEL_CONFIGS = [
       [2]     // colcheia no contratempo
     ],
     density: 0.3,
-    minNotesPerBar: 4
+    minNotesPerBar: 4,
+
+    // O primeiro tempo do compasso de introdução fica vazio.
+    // Como cada célula deste nível tem uma nota, só cabem três.
+    introMinNotesPerBar: 3
   }),
 
   // ==========================================================

@@ -129,7 +129,10 @@ const MIDI = { access: null, input: null };
 //   subdivisionsPerBeat    subdivisões dentro de cada tempo
 //   lanes                  filas permitidas neste nível
 //   density                probabilidade (0–1) de uma
-//                          subdivisão ter nota
+//                          célula rítmica aparecer num beat
+//   minNotesPerBar         mínimo garantido num compasso normal
+//   introMinNotesPerBar    mínimo garantido no primeiro compasso,
+//                          cujo primeiro beat fica em silêncio
 //   avoidConsecutiveRepeat evita repetir a mesma fila
 //                          duas vezes seguidas
 //   allowLaneChangesWithinCell permite que as notas de uma
@@ -159,6 +162,7 @@ function createLevelRules({
   density,
 
   minNotesPerBar = 1,
+  introMinNotesPerBar = minNotesPerBar,
   avoidConsecutiveRepeat = false,
   allowLaneChangesWithinCell = false,
   hitWindows = DEFAULT_HIT_WINDOWS
@@ -173,6 +177,7 @@ function createLevelRules({
     avoidConsecutiveRepeat,
     allowLaneChangesWithinCell,
     minNotesPerBar,
+    introMinNotesPerBar,
     hitWindows,
     crossingDurationMs: (60000 / bpm) * beatsPerBar
   };

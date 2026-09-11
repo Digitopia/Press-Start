@@ -8,7 +8,8 @@
 // 3. No primeiro compasso de cada nível, o beat 1 pode ser
 //    reservado como silêncio através de `allowNotesOnFirstBeat`.
 //
-// No fim, tenta atingir `minNotesPerBar` usando beats vazios.
+// No fim, garante o mínimo de notas configurado, reforçando ou
+// acrescentando células sempre que a primeira passagem não chega.
 // ============================================================
 
 function pickActiveLanes(laneCount) {
@@ -27,15 +28,12 @@ function pickActiveLanes(laneCount) {
 function pickRandomLane(lanes, lastLane, avoidRepeat) {
   if (lanes.length === 1) return lanes[0];
 
-  let choice;
-  let attempts = 0;
+  const choices =
+    avoidRepeat && lastLane
+      ? lanes.filter(lane => lane !== lastLane)
+      : lanes;
 
-  do {
-    choice = lanes[floor(random(lanes.length))];
-    attempts++;
-  } while (avoidRepeat && choice === lastLane && attempts < 8);
-
-  return choice;
+  return choices[floor(random(choices.length))];
 }
 
 // Preenche uma célula rítmica e devolve a última fila usada.
@@ -64,81 +62,124 @@ function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
 }
 
 
-// Devolve os índices dos beats ainda completamente vazios
-// (nenhuma subdivisão preenchida) — só esses podem receber
-// uma célula rítmica nova, para nunca misturar duas células
-// diferentes no mesmo beat.
-function getEmptyBeatIndexes(beats, allowNotesOnFirstBeat) {
-  const indexes = [];
-
-  for (let beatIndex = 0; beatIndex < beats.length; beatIndex++) {
-    if (beatIndex === 0 && !allowNotesOnFirstBeat) continue;
-
-    const isEmpty = beats[beatIndex].pattern.every(cell => !cell);
-    if (isEmpty) indexes.push(beatIndex);
-  }
-
-  return indexes;
+function getMinimumNotes(config, allowNotesOnFirstBeat) {
+  return allowNotesOnFirstBeat
+    ? config.minNotesPerBar
+    : config.introMinNotesPerBar;
 }
 
-function shuffleInPlace(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = floor(random(i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+function validateGenerationRules(config, allowNotesOnFirstBeat) {
+  if (!config.allowedRhythms.length) {
+    throw new Error("allowedRhythms must contain at least one rhythm.");
   }
-  return array;
-}
 
-function fillUntilMinimum(
-  beats,
-  config,
-  activeLanes,
-  lastLane,
-  currentCount,
-  allowNotesOnFirstBeat
-) {
-  const target = config.minNotesPerBar;
-  if (currentCount >= target) return;
+  for (const rhythm of config.allowedRhythms) {
+    const uniqueSubdivisions = new Set(rhythm);
+    const isValid =
+      rhythm.length > 0 &&
+      uniqueSubdivisions.size === rhythm.length &&
+      rhythm.every(subdivision =>
+        Number.isInteger(subdivision) &&
+        subdivision >= 0 &&
+        subdivision < config.subdivisionsPerBeat
+      );
 
-  const emptyBeats = shuffleInPlace(
-    getEmptyBeatIndexes(beats, allowNotesOnFirstBeat)
+    if (!isValid) {
+      throw new Error(`Invalid rhythm: [${rhythm.join(", ")}].`);
+    }
+  }
+
+  const target = getMinimumNotes(config, allowNotesOnFirstBeat);
+  const availableBeats =
+    config.beatsPerBar - (allowNotesOnFirstBeat ? 0 : 1);
+  const maxNotesPerBeat = Math.max(
+    ...config.allowedRhythms.map(rhythm => rhythm.length)
   );
-  let lane = lastLane;
-  let added = 0;
 
-  for (const beatIndex of emptyBeats) {
-    if (currentCount + added >= target) break;
+  if (!Number.isInteger(target) || target < 0) {
+    throw new Error("The minimum number of notes must be a non-negative integer.");
+  }
 
-    // Escolhe uma célula rítmica inteira para este beat,
-    // tal como a fase principal de generateBar() já faz.
-    const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
-
-    lane = fillRhythmCell(
-      beats[beatIndex].pattern,
-      rhythm,
-      config,
-      activeLanes,
-      lane
+  if (target > availableBeats * maxNotesPerBeat) {
+    throw new Error(
+      `Cannot generate ${target} notes in ${availableBeats} available beats.`
     );
+  }
+}
 
-    added += rhythm.length;
+// Reforça a estrutura rítmica até atingir o mínimo. Uma célula
+// já existente pode ser trocada por outra mais densa, evitando
+// situações em que todos os beats ficam ocupados mas o mínimo
+// continua por cumprir.
+function ensureMinimumRhythms(rhythms, config, allowNotesOnFirstBeat) {
+  const target = getMinimumNotes(config, allowNotesOnFirstBeat);
+  let noteCount = rhythms.reduce(
+    (total, rhythm) => total + (rhythm?.length ?? 0),
+    0
+  );
+
+  while (noteCount < target) {
+    const candidates = [];
+
+    for (let beatIndex = 0; beatIndex < rhythms.length; beatIndex++) {
+      if (beatIndex === 0 && !allowNotesOnFirstBeat) continue;
+
+      const currentLength = rhythms[beatIndex]?.length ?? 0;
+
+      for (const rhythm of config.allowedRhythms) {
+        if (rhythm.length <= currentLength) continue;
+
+        candidates.push({
+          beatIndex,
+          rhythm,
+          addedNotes: rhythm.length - currentLength
+        });
+      }
+    }
+
+    const remaining = target - noteCount;
+    const candidatesWithoutOvershoot = candidates.filter(
+      candidate => candidate.addedNotes <= remaining
+    );
+    const pool = candidatesWithoutOvershoot.length
+      ? candidatesWithoutOvershoot
+      : candidates;
+    const chosen = pool[floor(random(pool.length))];
+
+    // validateGenerationRules() garante que existe sempre uma
+    // sequência de upgrades capaz de alcançar o mínimo.
+    rhythms[chosen.beatIndex] = chosen.rhythm;
+    noteCount += chosen.addedNotes;
   }
 }
 
 function generateBar(config, { allowNotesOnFirstBeat = true } = {}) {
+  validateGenerationRules(config, allowNotesOnFirstBeat);
+
   const activeLanes = pickActiveLanes(config.laneCount);
-  const beats = [];
-  let lastLane = null;
-  let noteCount = 0;
+  const rhythms = new Array(config.beatsPerBar).fill(null);
 
   for (let beatIndex = 0; beatIndex < config.beatsPerBar; beatIndex++) {
-    const pattern = new Array(config.subdivisionsPerBeat).fill(0);
-
     // density decide SE este beat tem ritmo, ou fica em silêncio.
     // No primeiro compasso de cada nível, o primeiro tempo é reservado.
     if ((beatIndex > 0 || allowNotesOnFirstBeat) && random() < config.density) {
-      const rhythm = config.allowedRhythms[floor(random(config.allowedRhythms.length))];
+      rhythms[beatIndex] =
+        config.allowedRhythms[floor(random(config.allowedRhythms.length))];
+    }
+  }
 
+  ensureMinimumRhythms(rhythms, config, allowNotesOnFirstBeat);
+
+  // Só depois de a estrutura rítmica estar fechada atribuímos
+  // as filas, sempre por ordem temporal. Assim, a regra de não
+  // repetir uma fila consecutivamente é realmente garantida.
+  const beats = [];
+  let lastLane = null;
+
+  for (const rhythm of rhythms) {
+    const pattern = new Array(config.subdivisionsPerBeat).fill(0);
+
+    if (rhythm) {
       lastLane = fillRhythmCell(
         pattern,
         rhythm,
@@ -146,21 +187,10 @@ function generateBar(config, { allowNotesOnFirstBeat = true } = {}) {
         activeLanes,
         lastLane
       );
-
-      noteCount += rhythm.length;
     }
 
     beats.push({ pattern });
   }
-
-  fillUntilMinimum(
-    beats,
-    config,
-    activeLanes,
-    lastLane,
-    noteCount,
-    allowNotesOnFirstBeat
-  );
 
   return beats;
 }

@@ -26,17 +26,19 @@ const GAME = {
   eventResults: new Map(),
 
   score: 0,
+
+  // Pontos conquistados na tentativa atual do nível.
+  // Ao perder uma vida, este progresso volta a zero sem apagar
+  // a pontuação total da partida.
+  levelScore: 0,
+
   combo: 0,
   maxCombo: 0,
   barNumber: 1,
 
-  // parâmetros iniciais para se avançar de nível
-  nextlevel_score: 300,
+  // Pontos necessários para concluir a tentativa atual.
+  levelTargetScore: 300,
   levelImprove: 50,
-
-  // Pontuação em que o nível atual começou.
-  // Serve de base à barra de progresso do HUD.
-  levelStartScore: 0,
 
   // ----------------------------------------------------------
   // VIDA
@@ -113,6 +115,7 @@ function loseLife() {
   GAME.lives--;
   GAME.lifeLostFrame = frameCount;
   GAME.combo = 0;
+  GAME.levelScore = 0;
 
   // Já não há vidas — fim de jogo.
   if (GAME.lives <= 0) {
@@ -213,17 +216,24 @@ function advanceToNextBar() {
 // RESET
 // ============================================================
 
-function resetGame() {
+function resetGame({ keepLevel = false } = {}) {
+  if (!keepLevel) {
+    GAME.level = 1;
+  }
+
   GAME.state = "ready";
   GAME.ballPosition = 0;
 
   GAME.score = 0;
+  GAME.levelScore = 0;
   GAME.combo = 0;
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
-  GAME.nextlevel_score = 300;
-  GAME.levelStartScore = 0;
+  GAME.levelTargetScore =
+    GAME.level === 1
+      ? 300
+      : GAME.levelImprove * GAME.level;
 
   // vidas e barra a partir da config global
   GAME.maxLives = HEALTH.lives;
@@ -255,13 +265,13 @@ function handChangeLevel(newLevel) {
   if (nextLevel === GAME.level) return;
 
   GAME.level = nextLevel;
-  resetGame();
+  resetGame({ keepLevel: true });
 }
 
 // automaticamente
 function changeLevel() {
 
-  if (GAME.score >= GAME.nextlevel_score) {
+  if (GAME.levelScore >= GAME.levelTargetScore) {
 
     // se já está no último nível — não há mais para onde subir
     if (GAME.level >= LEVEL_CONFIGS.length) return false;
@@ -270,18 +280,16 @@ function changeLevel() {
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
     GAME.level = nextLevel;
 
-    // A barra de progresso mede o caminho entre o alvo anterior
-    // e o novo, por isso guardamos o antigo antes de o substituir.
-    GAME.levelStartScore = GAME.nextlevel_score
-
-    // sempre que se passa de nível é calculado numa nova pontuação necessária para avançar
-    GAME.nextlevel_score = GAME.nextlevel_score + GAME.levelImprove * GAME.level
+    // Cada nível começa com uma tentativa limpa. A pontuação total
+    // continua acumulada, mas não conta como progresso no novo nível.
+    GAME.levelScore = 0;
+    GAME.levelTargetScore = GAME.levelImprove * GAME.level;
 
     // A barra de vida volta ao máximo no início de cada nível.
     // As vidas já gastas NÃO são devolvidas.
     resetHealth();
 
-    console.log(`Level ${GAME.level}. Reach a score of ${GAME.nextlevel_score} to advance.`)
+    console.log(`Level ${GAME.level}. Earn ${GAME.levelTargetScore} points to advance.`)
 
     GAME.state = "nextlevel"
 

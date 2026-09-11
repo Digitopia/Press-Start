@@ -245,7 +245,10 @@ function registerSuccessfulHit(event, judgement) {
   GAME.combo++;
   GAME.maxCombo = Math.max(GAME.maxCombo, GAME.combo);
 
-  GAME.score += basePoints * GAME.combo;   // points x combo
+  const earnedPoints = basePoints * GAME.combo;
+
+  GAME.score += earnedPoints;
+  GAME.levelScore += earnedPoints;
 
   // ==========================================================
   // CURA

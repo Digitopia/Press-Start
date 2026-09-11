@@ -472,14 +472,12 @@ function drawHudMeter(x, label, labelAlign, ratio, color) {
   );
 }
 
-// Fração do caminho entre o alvo do nível anterior
-// e o alvo do nível atual.
+// Progresso conquistado na tentativa atual do nível.
 function getLevelProgress() {
-  const span = GAME.nextlevel_score - GAME.levelStartScore;
-  if (span <= 0) return 1;
+  if (GAME.levelTargetScore <= 0) return 1;
 
   return constrain(
-    (GAME.score - GAME.levelStartScore) / span,
+    GAME.levelScore / GAME.levelTargetScore,
     0,
     1
   );
@@ -923,7 +921,7 @@ function drawLiveLostOverlay() {
 
   const hudY = height / 2 + height / 4;
 
-  text(`RESETING LEVEL... LIVES x${GAME.lives}`, width / 2, hudY);
+  text(`LEVEL PROGRESS LOST   ·   LIVES x${GAME.lives}`, width / 2, hudY);
 
   pop();
 }

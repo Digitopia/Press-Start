@@ -14,10 +14,73 @@ const SCORE_LAYOUT = {
 
 // ============================================================
 // JANELAS DE ACERTO
-// valores em MILISSEGUNDOS
+//
+// Cada janela ocupa uma fração do menor intervalo rítmico que
+// o nível consegue gerar. maxMs mantém os níveis mais lentos
+// dentro da tolerância original.
+//
+// OK fica abaixo de metade do intervalo mínimo, impedindo que
+// as janelas de duas notas consecutivas se sobreponham.
 // ============================================================
 
-const DEFAULT_HIT_WINDOWS = { perfect: 55, good: 100, ok: 160 };
+const DEFAULT_HIT_WINDOW_RULES = {
+  perfect: { ratio: 0.22, maxMs: 55 },
+  good: { ratio: 0.40, maxMs: 100 },
+  ok: { ratio: 0.48, maxMs: 160 }
+};
+
+function getShortestRhythmIntervalSteps(allowedRhythms, subdivisionsPerBeat) {
+  let shortest = subdivisionsPerBeat;
+
+  for (const rhythm of allowedRhythms) {
+    const ordered = [...rhythm].sort((a, b) => a - b);
+
+    for (let index = 1; index < ordered.length; index++) {
+      shortest = Math.min(shortest, ordered[index] - ordered[index - 1]);
+    }
+  }
+
+  // Também é possível haver notas muito próximas na fronteira
+  // entre dois beats, mesmo que cada célula isolada seja espaçada.
+  for (const currentRhythm of allowedRhythms) {
+    const currentLast = Math.max(...currentRhythm);
+
+    for (const nextRhythm of allowedRhythms) {
+      const nextFirst = Math.min(...nextRhythm);
+      const distance = subdivisionsPerBeat - currentLast + nextFirst;
+      shortest = Math.min(shortest, distance);
+    }
+  }
+
+  return shortest;
+}
+
+function createHitWindows({
+  bpm,
+  subdivisionsPerBeat,
+  allowedRhythms,
+  rules = DEFAULT_HIT_WINDOW_RULES
+}) {
+  const beatDurationMs = 60000 / bpm;
+  const shortestIntervalSteps = getShortestRhythmIntervalSteps(
+    allowedRhythms,
+    subdivisionsPerBeat
+  );
+  const shortestIntervalMs =
+    beatDurationMs * shortestIntervalSteps / subdivisionsPerBeat;
+
+  return {
+    perfect: Math.round(
+      Math.min(rules.perfect.maxMs, shortestIntervalMs * rules.perfect.ratio)
+    ),
+    good: Math.round(
+      Math.min(rules.good.maxMs, shortestIntervalMs * rules.good.ratio)
+    ),
+    ok: Math.round(
+      Math.min(rules.ok.maxMs, shortestIntervalMs * rules.ok.ratio)
+    )
+  };
+}
 
 // ============================================================
 // VIDA / HEALTH
@@ -165,20 +228,28 @@ function createLevelRules({
   introMinNotesPerBar = minNotesPerBar,
   avoidConsecutiveRepeat = false,
   allowLaneChangesWithinCell = false,
-  hitWindows = DEFAULT_HIT_WINDOWS
+  hitWindowRules = DEFAULT_HIT_WINDOW_RULES
 }) {
+  const rhythms =
+    allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]];
+
   return {
     bpm,
     beatsPerBar,
     subdivisionsPerBeat,
     laneCount,
-    allowedRhythms: allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]],
+    allowedRhythms: rhythms,
     density,
     avoidConsecutiveRepeat,
     allowLaneChangesWithinCell,
     minNotesPerBar,
     introMinNotesPerBar,
-    hitWindows,
+    hitWindows: createHitWindows({
+      bpm,
+      subdivisionsPerBeat,
+      allowedRhythms: rhythms,
+      rules: hitWindowRules
+    }),
     crossingDurationMs: (60000 / bpm) * beatsPerBar
   };
 }

@@ -24,6 +24,9 @@
 // VISIBILIDADE (não muda as regras, só a informação dada)
 //   showScorePath         linha no compasso ativo
 //   showPreviewPath       linha no preview (defeito: = showScorePath)
+//   showScoreTrail        rasto atrás da bola quando não há linha
+//                         (defeito: = !showScorePath)
+//   trailFadeBeats        tempos até o rasto apagar (null = fica)
 //   visibleBeatsAhead     tempos visíveis à frente da bola
 //                         (null = tudo; atravessa os compassos)
 //                         a área do preview fica sempre no ecrã,
@@ -83,6 +86,10 @@ const LEVEL_CONFIGS = [
     density: 0.4,
     minNotesPerBar: 4,
 
+    // TO TEST VISIBILITY RULES
+    // showPreviewPath: false,
+    // showScorePath: false,
+    // visibleBeatsAhead: 1
   }),
 
   // ==========================================================
@@ -192,7 +199,8 @@ const LEVEL_CONFIGS = [
   // LEVEL 7 — A LINHA DESAPARECE
   //
   // Primeira informação retirada. Sem o contorno perde-se a
-  // antecipação de para onde a bola vai saltar.
+  // antecipação de para onde a bola vai saltar — em troca, o
+  // percurso passa a ser desenhado ATRÁS da bola, como rasto.
   //
   // Entram também [1,3] e allowLaneChangesWithinCell: uma
   // célula de quatro semicolcheias pode mudar de fila em cada

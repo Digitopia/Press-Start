@@ -347,6 +347,18 @@ function createLevelRules({
   // os níveis que não a mencionam comportam-se como antes.
   showPreviewPath = showScorePath,
 
+  // RASTO: quando não há linha à frente, o percurso é
+  // desenhado ATRÁS da bola, à medida que ela passa.
+  // Por defeito liga-se sozinho nos níveis sem linha, e não
+  // aparece nos que já mostram o percurso todo.
+  //
+  // Não revela nada: só desenha o que já foi tocado.
+  showScoreTrail = !showScorePath,
+
+  // Em quantos tempos o rasto se apaga atrás da bola.
+  // null = fica até ao fim do compasso.
+  trailFadeBeats = 4,
+
   // Quantos tempos à frente da bola ficam visíveis.
   // null = tudo visível (comportamento original).
   // Atravessa a fronteira do compasso: com 2, no fim do
@@ -361,7 +373,7 @@ function createLevelRules({
 
   // Tempos que a nota demora a aparecer, para não surgir de
   // repente. Puramente estético.
-  revealFadeBeats = 0.15
+  revealFadeBeats = 0.25
 }) {
   const rhythms =
     allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]];
@@ -379,6 +391,8 @@ function createLevelRules({
     introMinNotesPerBar,
     showScorePath,
     showPreviewPath,
+    showScoreTrail,
+    trailFadeBeats,
     visibleBeatsAhead,
     revealFadeBeats,
     hitWindows: createHitWindows({

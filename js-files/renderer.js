@@ -85,6 +85,9 @@ function drawScore(
 
   if (isActive ? config.showScorePath : config.showPreviewPath) {
     drawScorePath(area, events);
+  } else if (isActive && config.showScoreTrail) {
+    // Sem linha à frente, fica o rasto atrás.
+    drawScoreTrail(area, events);
   }
 
   drawScoreEvents(
@@ -345,6 +348,56 @@ function drawScorePath(
   }
 
   endShape();
+}
+
+// ============================================================
+// DESENHO — RASTO
+//
+// O mesmo percurso do drawScorePath(), mas cortado na posição
+// da bola: só se desenha o que já passou. O último vértice é a
+// posição exata da bola, não o último evento, para o traço
+// acompanhar o movimento em vez de saltar de nota em nota.
+//
+// Desenhado segmento a segmento porque cada um tem a sua
+// opacidade, em função de há quantos tempos ficou para trás.
+// ============================================================
+
+function drawScoreTrail(area, events) {
+  const config = getCurrentLevelConfig();
+  const points = getScorePathPoints(area, events);
+  const ballT = GAME.ballPosition;
+
+  const head = getPointOnTimedPath(points, ballT);
+
+  const trail = points.filter(point => point.t <= ballT);
+  trail.push({ t: ballT, x: head.x, y: head.y });
+
+  if (trail.length < 2) return;
+
+  const baseAlpha = drawingContext.globalAlpha;
+
+  strokeWeight(2);
+  noFill();
+
+  for (let index = 0; index < trail.length - 1; index++) {
+    const start = trail[index];
+    const end = trail[index + 1];
+
+    let opacity = 1;
+
+    if (config.trailFadeBeats !== null) {
+      const beatsBehind = (ballT - start.t) * config.beatsPerBar;
+      opacity = constrain(1 - beatsBehind / config.trailFadeBeats, 0.25, 1);
+    }
+
+    if (opacity <= 0) continue;
+
+    drawingContext.globalAlpha = baseAlpha * opacity;
+    stroke(75);
+    line(start.x, start.y, end.x, end.y);
+  }
+
+  drawingContext.globalAlpha = baseAlpha;
 }
 
 // ============================================================

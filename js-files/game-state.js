@@ -64,8 +64,9 @@ const GAME = {
   // Clock musical
   barStartAudioTime: null,
 
-  currentBeat: null,
-
+  // O metrónomo é agendado pelo CLICK_TRANSPORT, por isso já
+  // não existe currentBeat. countdownBeat fica porque o
+  // renderer lê-o para desenhar o número da contagem.
   countdownStartAudioTime: null,
   countdownBeat: null,
 
@@ -133,7 +134,6 @@ function loseLife() {
 
   // Ainda há vidas: a barra volta a encher e o jogo continua.
   GAME.health = HEALTH.max;
-  GAME.state = "lifelost";
 
   // O overlay já anuncia a perda de vida —
   // limpar o feedback da falha que a causou.
@@ -142,18 +142,13 @@ function loseLife() {
 
   playBeep(140, 220, 0.18);
 
-  // Copiado do startCountdown() 
-  GAME.countdownStartAudioTime = audioCtx.currentTime
-  GAME.countdownBeat = null
-  GAME.ballPosition = 0
-  GAME.combo = 0
-
   // Recomeçar o compasso: descartar o que estava a meio
   // e gerar uma partitura nova para o compasso e o preview.
   GAME.eventResults.clear();
-  GAME.currentBeat = null;
   buildCurrentLevel();
   // fazer reset com buildCurrentLevel() pq gera o compasso ativo com allowNotesOnFirstBeat: false, ou seja, o primeiro tempo fica em silêncio.
+
+  beginCountdown("lifelost");
 }
 
 // Usada no início de cada nível.
@@ -250,7 +245,9 @@ function resetGame({ keepLevel = false } = {}) {
 
   GAME.barStartAudioTime = null;
 
-  GAME.currentBeat = null;
+  GAME.countdownStartAudioTime = null;
+  GAME.countdownBeat = null;
+
   GAME.eventResults.clear();
 
   GAME.gameOverStartFrame = null;
@@ -297,13 +294,9 @@ function changeLevel() {
 
     console.log(`Level ${GAME.level}. Earn ${GAME.levelTargetScore} points to advance.`)
 
-    GAME.state = "nextlevel"
-
-    // Copiado do startCountdown() 
-    GAME.countdownStartAudioTime = audioCtx.currentTime
-    GAME.countdownBeat = null
-    GAME.ballPosition = 0
-    GAME.combo = 0
+    // O nível já mudou, por isso a contagem sai com o bpm novo —
+    // é ela que ensina o andamento do nível seguinte.
+    beginCountdown("nextlevel");
 
     return true;
   }

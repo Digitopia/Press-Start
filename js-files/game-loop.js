@@ -39,11 +39,12 @@ function updateGame() {
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
+  // Agenda música E metrónomo com antecedência.
+  // O metrónomo já não é disparado por deteção de frame.
   updateMusicTransport();
 
   GAME.ballPosition = constrain(elapsed / durationSeconds, 0, 1);
 
-  updateBeat();
   checkAutomaticMisses();
 
   if (GAME.judgementTimer > 0) {
@@ -96,7 +97,6 @@ function finishCurrentBar() {
 
   GAME.barNumber++;
   GAME.eventResults.clear();
-  GAME.currentBeat = null;
 
   // o nível só avança no final de compassos, nunca a meio
   const levelChanged = changeLevel();
@@ -109,25 +109,6 @@ function finishCurrentBar() {
     // Sem mudança de nível, o preview torna-se o compasso atual
     // e é gerado um novo preview.
     advanceToNextBar();
-  }
-}
-
-// ============================================================
-// BEAT / METRÓNOMO
-// ============================================================
-
-function updateBeat() {
-  const config = getCurrentLevelConfig();
-  const beat = min(config.beatsPerBar - 1, floor(GAME.ballPosition * config.beatsPerBar));
-
-  if (beat === GAME.currentBeat) return;
-  GAME.currentBeat = beat;
-
-  // Beat 1 ligeiramente mais forte
-  if (beat === 0) {
-    playBeep(520, 35, 0.08);
-  } else {
-    playBeep(440, 30, 0.045);
   }
 }
 
@@ -302,75 +283,77 @@ function registerFailure(type, count = 1) {
 
 // ============================================================
 // COUNTDOWN
+//
+// O ÁUDIO da contagem é agendado todo de uma vez, no arranque.
+// A deteção por frame fica apenas para o NÚMERO no ecrã
+// (GAME.countdownBeat é lido pelo renderer).
 // ============================================================
 
-function startCountdown() {
-  ensureAudioContext();
-
-  GAME.state = "countdown";
+function beginCountdown(state) {
+  GAME.state = state;
 
   GAME.countdownStartAudioTime =
-    audioCtx.currentTime;
+    audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS;
 
   GAME.countdownBeat = null;
 
   GAME.ballPosition = 0;
+  GAME.combo = 0;
+
+  scheduleCountdownClicks();
+}
+
+function scheduleCountdownClicks() {
+  const config = getCurrentLevelConfig();
+  const beatDurationSeconds = 60 / config.bpm;
+
+  for (let beat = 0; beat < config.beatsPerBar; beat++) {
+    scheduleBeep(
+      beat === 0 ? 700 : 500,
+      50,
+      0.12,
+      GAME.countdownStartAudioTime + beat * beatDurationSeconds
+    );
+  }
+}
+
+function startCountdown() {
+  ensureAudioContext();
+
+  beginCountdown("countdown");
 }
 
 function updateCountdown() {
-  const config =
-    getCurrentLevelConfig();
+  const config = getCurrentLevelConfig();
 
-  const beatDurationSeconds =
-    60 / config.bpm;
+  const beatDurationSeconds = 60 / config.bpm;
 
   const totalCountdownSeconds =
-    beatDurationSeconds *
-    config.beatsPerBar;
+    beatDurationSeconds * config.beatsPerBar;
 
   const elapsed =
-    audioCtx.currentTime -
-    GAME.countdownStartAudioTime;
+    audioCtx.currentTime - GAME.countdownStartAudioTime;
 
-  const beatIndex =
-    floor(
-      elapsed /
-      beatDurationSeconds
-    );
+  const beatIndex = floor(elapsed / beatDurationSeconds);
 
-  // Novo beat do countdown
+  // Novo beat do countdown — só para o ecrã.
+  // O click já foi agendado em scheduleCountdownClicks().
   if (
     beatIndex !== GAME.countdownBeat &&
     beatIndex < config.beatsPerBar
   ) {
-    GAME.countdownBeat =
-      beatIndex;
-
-    // click de contagem
-    playBeep(
-      beatIndex === 0 ? 700 : 500,
-      50,
-      0.12
-    );
+    GAME.countdownBeat = beatIndex;
   }
 
   // Countdown terminou
-  if (
-    elapsed >= totalCountdownSeconds
-  ) {
+  if (elapsed >= totalCountdownSeconds) {
     GAME.state = "playing";
 
     GAME.barStartAudioTime =
-      GAME.countdownStartAudioTime +
-      totalCountdownSeconds;
+      GAME.countdownStartAudioTime + totalCountdownSeconds;
 
-    GAME.countdownStartAudioTime =
-      null;
-
-    GAME.countdownBeat =
-      null;
-
-    GAME.currentBeat = null;
+    GAME.countdownStartAudioTime = null;
+    GAME.countdownBeat = null;
 
     startMusicTransport(GAME.barStartAudioTime);
   }

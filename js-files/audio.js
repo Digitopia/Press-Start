@@ -4,6 +4,18 @@
 
 let audioCtx = null;
 
+// ============================================================
+// Margem mínima entre criar os nós e o instante de arranque.
+//
+// Entre criar os nós, ligá-los e o grafo ser committed, a
+// thread de áudio já avançou. Sem esta margem o setValueAtTime
+// do ataque fica ancorado num instante passado, o ramp é
+// avaliado a meio e o ganho arranca num valor não-nulo —
+// é essa descontinuidade que se ouve como "click".
+// ============================================================
+
+const SFX_LOOKAHEAD_SECONDS = 0.005;
+
 function ensureAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -13,17 +25,40 @@ function ensureAudioContext() {
   }
 }
 
-function playBeep(frequency, durationMs, volume = 0.25) {
-  if (!audioCtx) return;
+// ============================================================
+// DOIS CAMINHOS
+//
+// playBeep()     reação imediata a uma ação do jogador
+//                (acerto, falha, perda de vida)
+//
+// scheduleBeep() instante exato, para tudo o que pertence ao
+//                relógio musical (metrónomo, contagem)
+// ============================================================
 
-  scheduleTone({
+function playBeep(frequency, durationMs, volume = 0.25) {
+  if (!audioCtx) return null;
+
+  return scheduleBeep(
     frequency,
-    startTime: audioCtx.currentTime,
-    durationSeconds: durationMs / 1000,
+    durationMs,
+    volume,
+    audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS
+  );
+}
+
+function scheduleBeep(frequency, durationMs, volume, startTime) {
+  if (!audioCtx) return null;
+
+  const durationSeconds = durationMs / 1000;
+
+  return scheduleTone({
+    frequency,
+    startTime,
+    durationSeconds,
     volume,
     oscillator: "sine",
     attackSeconds: 0.004,
-    releaseSeconds: durationMs / 1000
+    releaseSeconds: durationSeconds
   });
 }
 
@@ -68,7 +103,26 @@ function scheduleTone({
   gain.connect(destination);
 
   osc.start(safeStartTime);
-  osc.stop(endTime + 0.02);
+
+  // O ramp exponencial chega a 0.0001 (−80 dB) exatamente em
+  // endTime, por isso cortar aí é inaudível.
+  osc.stop(endTime);
+
+  // ==========================================================
+  // LIMPEZA
+  //
+  // Sem isto o GainNode fica ligado ao destino para sempre e
+  // continua a ser processado a cada render quantum, mesmo
+  // em silêncio. Numa sessão longa isto acumula.
+  //
+  // addEventListener e NÃO onended: o trackMusicSource() do
+  // music-transport.js usa onended e sobreporia esta limpeza.
+  // ==========================================================
+
+  osc.addEventListener("ended", () => {
+    osc.disconnect();
+    gain.disconnect();
+  });
 
   return osc;
 }

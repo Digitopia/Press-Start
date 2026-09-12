@@ -18,6 +18,50 @@ const MUSIC_TRANSPORT = {
   repeatedNoteStates: []
 };
 
+// ============================================================
+// METRÓNOMO
+//
+// O click deixou de ser disparado por deteção de frame. É uma
+// faixa agendada com antecedência, como qualquer outra camada,
+// e por isso arranca e pára junto com a música.
+//
+// nextBeatTime é o instante do próximo click AINDA NÃO agendado.
+// beatIndex é absoluto: conta desde o início do transporte, o
+// que faz o beat 1 cair sempre em beatIndex % beatsPerBar === 0.
+// ============================================================
+
+const CLICK_TRANSPORT = {
+  nextBeatTime: null,
+  beatIndex: 0
+};
+
+function updateClickTransport() {
+  if (CLICK_TRANSPORT.nextBeatTime === null || !audioCtx) return;
+
+  const config = getCurrentLevelConfig();
+  const beatDurationSeconds = 60 / config.bpm;
+  const scheduleLimit =
+    audioCtx.currentTime + MUSIC.scheduleAheadSeconds;
+
+  // while e não if: se uma frame se atrasar, não se perde
+  // nenhum click — agendam-se todos os que couberem.
+  while (CLICK_TRANSPORT.nextBeatTime <= scheduleLimit) {
+    const isDownbeat =
+      CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
+
+    // Beat 1 ligeiramente mais forte
+    scheduleBeep(
+      isDownbeat ? 520 : 440,
+      isDownbeat ? 35 : 30,
+      isDownbeat ? 0.08 : 0.045,
+      CLICK_TRANSPORT.nextBeatTime
+    );
+
+    CLICK_TRANSPORT.nextBeatTime += beatDurationSeconds;
+    CLICK_TRANSPORT.beatIndex++;
+  }
+}
+
 function pickRandomItem(items) {
   return items[Math.floor(Math.random() * items.length)];
 }
@@ -256,6 +300,11 @@ function startMusicTransport(startTime) {
     nextChangeBeat: 0
   }));
 
+  // O metrónomo parte da mesma origem temporal que a música
+  // e que o playhead.
+  CLICK_TRANSPORT.nextBeatTime = startTime;
+  CLICK_TRANSPORT.beatIndex = 0;
+
   updateMusicTransport();
 }
 
@@ -264,6 +313,8 @@ function stopMusicTransport() {
 
   MUSIC_TRANSPORT.playing = false;
   MUSIC_TRANSPORT.nextBarTime = null;
+
+  CLICK_TRANSPORT.nextBeatTime = null;
 
   const stopTime = audioCtx.currentTime + 0.035;
 
@@ -306,4 +357,6 @@ function updateMusicTransport() {
     MUSIC_TRANSPORT.nextBarTime += barDurationSeconds;
     MUSIC_TRANSPORT.barIndex++;
   }
+
+  updateClickTransport();
 }

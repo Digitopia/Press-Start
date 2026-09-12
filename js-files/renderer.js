@@ -77,11 +77,21 @@ function drawScore(
   drawScoreLabel(area, isActive);
   drawScoreLaneGuides(area);
   drawScoreBeatGrid(area);
-  drawScorePath(area, events);
+
+  // A linha é decidida por ÁREA: dá um degrau intermédio em
+  // que se mantém o contorno do compasso que se está a tocar
+  // e se perde só a antecipação do seguinte.
+  const config = getCurrentLevelConfig();
+
+  if (isActive ? config.showScorePath : config.showPreviewPath) {
+    drawScorePath(area, events);
+  }
+
   drawScoreEvents(
     area,
     events,
-    resultsMap
+    resultsMap,
+    isActive
   );
 
   // Só a partitura ativa tem bola.
@@ -110,12 +120,53 @@ function drawScoreLabel(area, isActive) {
   textStyle(NORMAL);
 }
 
+// ============================================================
+// REVELAÇÃO POR TEMPOS
+//
+// A bola avança de 0 a 1 dentro do compasso ativo. Para medir
+// a distância a uma nota do PREVIEW somamos 1 ao seu t, o que
+// coloca os dois compassos numa linha temporal contínua.
+//
+// Assim a janela de visibilidade atravessa a fronteira do
+// compasso sem caso especial: no fim do compasso ativo já se
+// acendem os primeiros tempos do preview.
+// ============================================================
+
+function getEventOpacity(event, isActive) {
+  const config = getCurrentLevelConfig();
+
+  if (config.visibleBeatsAhead === null) return 1;
+
+  const globalT = event.t + (isActive ? 0 : 1);
+  const beatsAway =
+    (globalT - GAME.ballPosition) * config.beatsPerBar;
+
+  const fade = config.revealFadeBeats;
+
+  return constrain(
+    (config.visibleBeatsAhead + fade - beatsAway) / fade,
+    0,
+    1
+  );
+}
+
 function drawScoreEvents(
   area,
   events,
-  resultsMap
+  resultsMap,
+  isActive
 ) {
+  // drawScore() já definiu o alpha base do preview (0.35).
+  // A revelação multiplica-o em vez de o substituir.
+  const baseAlpha = drawingContext.globalAlpha;
+
   for (const event of events) {
+    const opacity = getEventOpacity(event, isActive);
+
+    if (opacity <= 0) continue;
+
+    drawingContext.globalAlpha = baseAlpha * opacity;
+
     const lane =
       LANES[event.lane];
 
@@ -181,6 +232,8 @@ function drawScoreEvents(
       19
     );
   }
+
+  drawingContext.globalAlpha = baseAlpha;
 }
 
 function getScorePathPoints(
@@ -724,6 +777,11 @@ function drawFooter() {
 // nasce na área que acabou de ser tocada.
 // ============================================================
 
+// O preview é uma área fixa do ecrã: está sempre lá, com a
+// etiqueta, as guias de fila e a grelha de tempos. O que pode
+// acontecer é ficar SEM NOTAS — quando visibleBeatsAhead ainda
+// não chegou ao compasso seguinte. A moldura vazia é, ela
+// própria, informação.
 function drawGameArea() {
   const areas =
     getScoreAreas();

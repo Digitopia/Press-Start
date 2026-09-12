@@ -326,7 +326,42 @@ function createLevelRules({
   introMinNotesPerBar = minNotesPerBar,
   avoidConsecutiveRepeat = false,
   allowLaneChangesWithinCell = false,
-  hitWindowRules = DEFAULT_HIT_WINDOW_RULES
+  hitWindowRules = DEFAULT_HIT_WINDOW_RULES,
+
+  // ----------------------------------------------------------
+  // VISIBILIDADE
+  //
+  // Nenhuma destas flags muda as regras do jogo: uma nota
+  // escondida continua a existir, a ser julgada e a contar
+  // como MISS. Retiram informação, não notas.
+  //
+  // A linha e o preview são controlados por ÁREA, para dar um
+  // degrau intermédio: manter o contorno do que se está a
+  // tocar e perder só a antecipação do compasso seguinte.
+  // ----------------------------------------------------------
+
+  // Linha que une os pontos no compasso ATIVO.
+  showScorePath = true,
+
+  // Linha no PREVIEW. Por defeito acompanha o ativo, por isso
+  // os níveis que não a mencionam comportam-se como antes.
+  showPreviewPath = showScorePath,
+
+  // Quantos tempos à frente da bola ficam visíveis.
+  // null = tudo visível (comportamento original).
+  // Atravessa a fronteira do compasso: com 2, no fim do
+  // compasso já se acendem os primeiros tempos do preview.
+  //
+  // A área do preview continua sempre desenhada — o que muda
+  // é ela poder ficar sem notas até a bola se aproximar.
+  //
+  // Só faz sentido com as linhas desligadas — caso contrário
+  // o contorno denuncia o que os pontos escondem.
+  visibleBeatsAhead = null,
+
+  // Tempos que a nota demora a aparecer, para não surgir de
+  // repente. Puramente estético.
+  revealFadeBeats = 0.15
 }) {
   const rhythms =
     allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]];
@@ -342,6 +377,10 @@ function createLevelRules({
     allowLaneChangesWithinCell,
     minNotesPerBar,
     introMinNotesPerBar,
+    showScorePath,
+    showPreviewPath,
+    visibleBeatsAhead,
+    revealFadeBeats,
     hitWindows: createHitWindows({
       bpm,
       subdivisionsPerBeat,

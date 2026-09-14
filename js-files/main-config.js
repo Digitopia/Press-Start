@@ -323,7 +323,17 @@ function createLevelRules({
   density,
 
   minNotesPerBar = 1,
-  introMinNotesPerBar = minNotesPerBar,
+
+  // O compasso de introdução tem menos UM tempo disponivel.
+  // Herdar o minNotesPerBar deixava-o mais DENSO que os
+  // compassos normais, que é o contrário do que ele é para
+  // ser: um respiro para ler a partitura nova.
+  //
+  // O defeito mantém a densidade por tempo, não o total.
+  introMinNotesPerBar = Math.floor(
+    minNotesPerBar * (beatsPerBar - 1) / beatsPerBar
+  ),
+
   avoidConsecutiveRepeat = false,
   allowLaneChangesWithinCell = false,
   hitWindowRules = DEFAULT_HIT_WINDOW_RULES,

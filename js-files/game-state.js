@@ -37,8 +37,10 @@ const GAME = {
   barNumber: 1,
 
   // Pontos necessários para concluir a tentativa atual.
+  // Calculado por getLevelTargetScore() a partir das regras do
+  // nível — este valor é só um seguro para antes do primeiro
+  // resetGame().
   levelTargetScore: 300,
-  levelImprove: 50,
 
   // ----------------------------------------------------------
   // VIDA
@@ -86,6 +88,29 @@ function getCurrentLevelConfig() {
 
 function getBarDurationMs() {
   return getCurrentLevelConfig().crossingDurationMs;
+}
+
+// ============================================================
+// ALVO DO NÍVEL
+//
+// O que rende uma passagem PERFEITA de barsToClearLevel
+// compassos, com as notas que este nível põe em cada um.
+//
+// Como os níveis densos têm mais notas por compasso, o alvo
+// sobe sozinho: o que se mantém constante é o número de
+// compassos, que é a unidade em que o jogo se joga.
+//
+// Exigir PERFECT é de propósito. Tocar tudo certo mas em GOOD
+// rende dois terços, portanto passa-se na mesma — só demora
+// mais um compasso ou dois.
+// ============================================================
+
+function getLevelTargetScore(level) {
+  const config = LEVEL_CONFIGS[level - 1];
+
+  const notes = config.minNotesPerBar * SCORING.barsToClearLevel;
+
+  return notes * JUDGEMENT_POINTS.PERFECT * SCORING.maxComboMultiplier;
 }
 
 // ============================================================
@@ -229,10 +254,7 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.maxCombo = 0;
   GAME.barNumber = 1;
 
-  GAME.levelTargetScore =
-    GAME.level === 1
-      ? 300
-      : GAME.levelImprove * GAME.level;
+  GAME.levelTargetScore = getLevelTargetScore(GAME.level);
 
   // vidas e barra a partir da config global
   GAME.maxLives = HEALTH.lives;
@@ -286,7 +308,7 @@ function changeLevel() {
     // Cada nível começa com uma tentativa limpa. A pontuação total
     // continua acumulada, mas não conta como progresso no novo nível.
     GAME.levelScore = 0;
-    GAME.levelTargetScore = GAME.levelImprove * GAME.level;
+    GAME.levelTargetScore = getLevelTargetScore(GAME.level);
 
     // A barra de vida volta ao máximo no início de cada nível.
     // As vidas já gastas NÃO são devolvidas.

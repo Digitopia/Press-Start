@@ -228,7 +228,10 @@ function registerSuccessfulHit(event, judgement) {
   GAME.combo++;
   GAME.maxCombo = Math.max(GAME.maxCombo, GAME.combo);
 
-  const earnedPoints = basePoints * GAME.combo;
+  // O combo continua a contar sem limite no ecrã; o tecto
+  // aplica-se só ao multiplicador dos pontos.
+  const earnedPoints =
+    basePoints * Math.min(GAME.combo, SCORING.maxComboMultiplier);
 
   GAME.score += earnedPoints;
   GAME.levelScore += earnedPoints;

@@ -181,6 +181,30 @@ const MUSIC = {
 };
 
 // ============================================================
+// PONTUAÇÃO
+//
+// O combo multiplica os pontos, com tecto. Sem tecto o ganho
+// cresce com o QUADRADO das notas seguidas e os níveis densos
+// passam-se num compasso.
+//
+// O tecto é invisível: GAME.combo continua a contar sem limite
+// e é esse número que aparece no ecrã.
+//
+// O alvo de cada nível não é uma escada de números: é sempre o
+// mesmo número de COMPASSOS, traduzido nas notas que ESTE
+// nível põe em cada compasso (ver getLevelTargetScore).
+// ============================================================
+
+const SCORING = {
+  maxComboMultiplier: 8,
+
+  // Compassos de jogo PERFEITO para passar de nível. Na
+  // prática são sempre mais, porque cada GOOD ou OK rende
+  // menos e qualquer falha deita o combo abaixo.
+  barsToClearLevel: 3
+};
+
+// ============================================================
 // VIDA / HEALTH
 //
 // A barra de health desce a cada falha e sobe a cada acerto.

@@ -296,12 +296,15 @@ const MIDI = { access: null, input: null };
 //                          cujo primeiro beat fica em silêncio
 //   avoidConsecutiveRepeat evita repetir a mesma fila
 //                          duas vezes seguidas
-//   allowLaneChangesWithinCell permite que as notas de uma
-//                              célula usem filas diferentes
+//   laneChangesWithinCell  quantas mudanças de fila cabem
+//                          dentro de uma célula:
+//                          "none" / "split" / "free"
 //
 // O CONTEÚDO (que fila soa em cada subdivisão) é gerado
 // aleatoriamente, de novo, a cada compasso.
 // ============================================================
+
+const LANE_CHANGE_MODES = ["none", "split", "free"];
 
 function createLevelRules({
   bpm,
@@ -335,7 +338,23 @@ function createLevelRules({
   ),
 
   avoidConsecutiveRepeat = false,
-  allowLaneChangesWithinCell = false,
+
+  // ----------------------------------------------------------
+  // MUDANÇAS DE FILA DENTRO DA CÉLULA
+  //
+  //   "none"   a célula inteira numa fila só
+  //   "split"  UMA mudança: a célula parte-se em dois blocos
+  //   "free"   cada nota da célula escolhe fila
+  //
+  // O degrau a sério está entre "none" e "split": continua a
+  // haver um bloco para agarrar, mas já não se pode pousar a
+  // mão e esperar. O "free" é o caos, e por isso chega tarde.
+  //
+  // Células de uma nota só não têm "dentro": os três modos
+  // dão exatamente o mesmo resultado.
+  // ----------------------------------------------------------
+  laneChangesWithinCell = "none",
+
   hitWindowRules = DEFAULT_HIT_WINDOW_RULES,
 
   // ----------------------------------------------------------
@@ -399,6 +418,16 @@ function createLevelRules({
   const rhythms =
     allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]];
 
+  // Uma gralha no modo ("Split", "all") seria silenciosa e o
+  // nível sairia com o comportamento errado — mais vale falhar
+  // aqui, no arranque.
+  if (!LANE_CHANGE_MODES.includes(laneChangesWithinCell)) {
+    throw new Error(
+      `Unknown laneChangesWithinCell: "${laneChangesWithinCell}". ` +
+      `Use one of: ${LANE_CHANGE_MODES.join(", ")}.`
+    );
+  }
+
   return {
     bpm,
     beatsPerBar,
@@ -407,7 +436,7 @@ function createLevelRules({
     allowedRhythms: rhythms,
     density,
     avoidConsecutiveRepeat,
-    allowLaneChangesWithinCell,
+    laneChangesWithinCell,
     minNotesPerBar,
     introMinNotesPerBar,
     showSubdivisionGrid,

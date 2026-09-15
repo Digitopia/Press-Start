@@ -22,7 +22,10 @@
 // FILAS
 //   laneCount             1–4; as cores são sorteadas a cada compasso
 //   avoidConsecutiveRepeat      não repete fila seguida
-//   allowLaneChangesWithinCell  cada nota da célula muda de fila
+//   laneChangesWithinCell       mudanças de fila DENTRO da célula
+//                               "none"  uma cor por célula
+//                               "split" a célula parte-se em dois
+//                               "free"  cada nota escolhe fila
 //
 // VISIBILIDADE (não muda as regras, só a informação dada)
 //   showSubdivisionGrid   riscos finos nas subdivisões do tempo
@@ -241,16 +244,20 @@ const LEVEL_CONFIGS = [
   // ==========================================================
   // LEVEL 7 — A CÉLULA PARTE-SE
   //
-  // allowLaneChangesWithinCell: a rajada do nível anterior
-  // deixa de ser uma cor só e pode saltar de fila em cada
-  // semicolcheia.
+  // laneChangesWithinCell: "split" — a rajada do nível anterior
+  // deixa de ser uma cor só, mas parte-se em DOIS blocos, não
+  // numa nota por fila. Continua a haver um gesto para agarrar:
+  // muda-se de mão a meio da célula, não a cada semicolcheia.
   //
-  // Janelas: PERFECT 43 / GOOD 79 / OK 95 ms
-  // 10 notas em 3.2 s = 3.2 notas/segundo
+  // O bpm não muda em relação ao 6: a tolerância é a mesma e
+  // o degrau é inteiramente a mudança de fila dentro da célula.
+  //
+  // Janelas: PERFECT 47 / GOOD 86 / OK 103 ms
+  // 10 notas em 3.4 s = 2.9 notas/segundo
   // ==========================================================
 
   createLevelRules({
-    bpm: 76,
+    bpm: 70,
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 4,
@@ -266,12 +273,13 @@ const LEVEL_CONFIGS = [
     density: 0.7,
     minNotesPerBar: 10,
     avoidConsecutiveRepeat: true,
-    allowLaneChangesWithinCell: true,
+    laneChangesWithinCell: "split",
 
     // As flags são por nível, não cumulativas: sem estas duas
     // a linha voltava a aparecer aqui.
     showScorePath: false,
-    showPreviewPath: false
+    showPreviewPath: false,
+    showSubdivisionGrid: false
   }),
 
   // ==========================================================
@@ -285,10 +293,50 @@ const LEVEL_CONFIGS = [
   // Entra também [1,3], a única célula que ignora por
   // completo o tempo forte.
   //
+  // E a célula deixa de ter blocos: laneChangesWithinCell
+  // passa a "free" e cada nota escolhe a sua fila.
+  //
   // A partir daqui não é suposto ganhar-se.
   //
+  // Janelas: PERFECT 43 / GOOD 79 / OK 95 ms
+  // 12 notas em 3.2 s = 3.8 notas/segundo
+  // ==========================================================
+
+  createLevelRules({
+    bpm: 76,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 4,
+    allowedRhythms: [
+      [0],
+      [2],
+      [0, 2],
+      [1, 3],
+      [2, 3],
+      [0, 1, 3],
+      [0, 2, 3],
+      [0, 1, 2, 3]
+    ],
+    density: 0.8,
+    minNotesPerBar: 12,
+    avoidConsecutiveRepeat: true,
+    laneChangesWithinCell: "free",
+
+    showScorePath: false,
+    showPreviewPath: false,
+    showSubdivisionGrid: false,
+    visibleBeatsAhead: 2
+  }),
+
+  // ==========================================================
+  // LEVEL 9 — UM TEMPO À FRENTE
+  //
+  // O tempo de reação de escolha entre quatro alternativas anda pelos
+  // 350–450 ms, portanto já não sobra margem para errar a
+  // fila e corrigir.
+  //
   // Janelas: PERFECT 41 / GOOD 75 / OK 90 ms
-  // 12 notas em 3.0 s = 4.0 notas/segundo
+  // 14 notas em 3.0 s = 4.7 notas/segundo
   // ==========================================================
 
   createLevelRules({
@@ -306,49 +354,14 @@ const LEVEL_CONFIGS = [
       [0, 2, 3],
       [0, 1, 2, 3]
     ],
-    density: 0.8,
-    minNotesPerBar: 12,
-    avoidConsecutiveRepeat: true,
-    allowLaneChangesWithinCell: true,
-
-    showScorePath: false,
-    showPreviewPath: false,
-    visibleBeatsAhead: 2
-  }),
-
-  // ==========================================================
-  // LEVEL 9 — UM TEMPO À FRENTE
-  //
-  // O tempo de reação de escolha entre quatro alternativas anda pelos
-  // 350–450 ms, portanto já não sobra margem para errar a
-  // fila e corrigir.
-  //
-  // Janelas: PERFECT 39 / GOOD 71 / OK 86 ms
-  // 14 notas em 2.9 s = 4.9 notas/segundo
-  // ==========================================================
-
-  createLevelRules({
-    bpm: 84,
-    beatsPerBar: 4,
-    subdivisionsPerBeat: 4,
-    laneCount: 4,
-    allowedRhythms: [
-      [0],
-      [2],
-      [0, 2],
-      [1, 3],
-      [2, 3],
-      [0, 1, 3],
-      [0, 2, 3],
-      [0, 1, 2, 3]
-    ],
     density: 0.9,
     minNotesPerBar: 14,
     avoidConsecutiveRepeat: true,
-    allowLaneChangesWithinCell: true,
+    laneChangesWithinCell: "free",
 
     showScorePath: false,
     showPreviewPath: false,
+    showSubdivisionGrid: false,
     visibleBeatsAhead: 1
   }),
 
@@ -363,12 +376,12 @@ const LEVEL_CONFIGS = [
   //
   // Não é suposto ganhar-se. É suposto ver-se até onde se vai.
   //
-  // Janelas: PERFECT 38 / GOOD 68 / OK 82 ms
-  // 16 notas em 2.7 s = 5.9 notas/segundo
+  // Janelas: PERFECT 39 / GOOD 71 / OK 86 ms
+  // 16 notas em 2.9 s = 5.6 notas/segundo
   // ==========================================================
 
   createLevelRules({
-    bpm: 88,
+    bpm: 84,
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 4,
@@ -391,10 +404,11 @@ const LEVEL_CONFIGS = [
     introMinNotesPerBar: 10,
 
     avoidConsecutiveRepeat: true,
-    allowLaneChangesWithinCell: true,
+    laneChangesWithinCell: "free",
 
     showScorePath: false,
     showPreviewPath: false,
+    showSubdivisionGrid: false,
     showScoreTrail: false, // tira o rasto da bola
     visibleBeatsAhead: 1
   })

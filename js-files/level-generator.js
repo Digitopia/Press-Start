@@ -37,14 +37,25 @@ function pickRandomLane(lanes, lastLane, avoidRepeat) {
 }
 
 // Preenche uma célula rítmica e devolve a última fila usada.
-// Por defeito, todas as notas da célula ficam na mesma fila.
-// Níveis futuros podem permitir mudanças dentro da célula com
-// allowLaneChangesWithinCell: true.
+//
+// laneChangesWithinCell decide quantas mudanças de fila cabem
+// lá dentro:
+//
+//   "none"   a célula inteira numa fila só
+//   "split"  a célula parte-se em dois blocos, um por fila
+//   "free"   cada nota escolhe fila
+//
+// Uma célula de uma nota não tem "dentro": os três modos
+// coincidem, e por isso o caso é tratado logo no primeiro ramo.
 function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
-  let lane = lastLane;
+  const mode = config.laneChangesWithinCell;
 
-  if (!config.allowLaneChangesWithinCell) {
-    lane = pickRandomLane(activeLanes, lastLane, config.avoidConsecutiveRepeat);
+  if (mode === "none" || rhythm.length === 1) {
+    const lane = pickRandomLane(
+      activeLanes,
+      lastLane,
+      config.avoidConsecutiveRepeat
+    );
 
     for (const subIndex of rhythm) {
       pattern[subIndex] = lane;
@@ -52,6 +63,40 @@ function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
 
     return lane;
   }
+
+  if (mode === "split") {
+    // Os dois blocos têm de ser contíguos no TEMPO, por isso a
+    // célula é lida por ordem, mesmo que venha escrita
+    // desordenada na configuração.
+    const ordered = [...rhythm].sort((a, b) => a - b);
+
+    // O corte nunca cai na primeira nota: se caísse, não havia
+    // primeiro bloco e a célula voltava a ser de uma cor só.
+    const splitIndex = 1 + floor(random(ordered.length - 1));
+
+    let lane = pickRandomLane(
+      activeLanes,
+      lastLane,
+      config.avoidConsecutiveRepeat
+    );
+
+    for (let index = 0; index < ordered.length; index++) {
+      // A mudança é o objetivo deste modo, por isso o segundo
+      // bloco troca SEMPRE de fila — independentemente do
+      // avoidConsecutiveRepeat, que regula a fronteira entre
+      // células e não esta.
+      if (index === splitIndex) {
+        lane = pickRandomLane(activeLanes, lane, true);
+      }
+
+      pattern[ordered[index]] = lane;
+    }
+
+    return lane;
+  }
+
+  // "free"
+  let lane = lastLane;
 
   for (const subIndex of rhythm) {
     lane = pickRandomLane(activeLanes, lane, config.avoidConsecutiveRepeat);

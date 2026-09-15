@@ -153,7 +153,7 @@ function loseLife() {
     GAME.state = "gameover";
     GAME.gameOverStartFrame = frameCount;
 
-    playBeep(90, 400, 0.2);
+    playPlayerGameOver()
     return;
   }
 
@@ -165,7 +165,7 @@ function loseLife() {
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
 
-  playBeep(140, 220, 0.18);
+  playPlayerLifeLost();
 
   // Recomeçar o compasso: descartar o que estava a meio
   // e gerar uma partitura nova para o compasso e o preview.

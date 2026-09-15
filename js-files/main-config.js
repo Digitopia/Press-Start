@@ -254,7 +254,6 @@ const FAILURES = {
     label: "MISS",
     timer: 500,
     damage: 10,
-    beep: null
   },
 
   // tempo certo, fila errada
@@ -262,7 +261,6 @@ const FAILURES = {
     label: "WRONG ROW",
     timer: 550,
     damage: 8,
-    beep: [110, 90, 0.12]
   },
 
   // bateu sem nota nenhuma por perto
@@ -274,7 +272,6 @@ const FAILURES = {
     label: "MISS",
     timer: 400,
     damage: 2,
-    beep: [110, 60, 0.07]
   }
 };
 

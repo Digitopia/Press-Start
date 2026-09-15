@@ -278,8 +278,7 @@ function registerSuccessfulHit(event, judgement) {
   GAME.lastJudgement = judgement;
   GAME.judgementTimer = 550;
 
-  const lane = LANES[event.lane];
-  playBeep(lane.frequency, 60, 0.22);
+  playPlayerHit(event.lane, judgement);
 }
 
 // ============================================================
@@ -304,9 +303,7 @@ function registerFailure(type, count = 1) {
   GAME.lastJudgement = failure.label;
   GAME.judgementTimer = failure.timer;
 
-  if (failure.beep) {
-    playBeep(...failure.beep);
-  }
+  playPlayerFailure(type);
 
   damagePlayer(failure.damage * count);
 }

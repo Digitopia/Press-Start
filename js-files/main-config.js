@@ -266,10 +266,14 @@ const FAILURES = {
   },
 
   // bateu sem nota nenhuma por perto
+  //
+  // A punição que conta é o combo a zero: perde-se o
+  // multiplicador e as notas seguintes rendem uma fração.
+  // À barra de vida chega um arranhão.
   stray: {
     label: "MISS",
     timer: 400,
-    damage: 5,
+    damage: 2,
     beep: [110, 60, 0.07]
   }
 };

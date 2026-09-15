@@ -176,6 +176,29 @@ function findClosestUnresolvedEvent(elapsedMs) {
 }
 
 // ============================================================
+// BATIDA REPETIDA NUMA NOTA JÁ RESOLVIDA
+//
+// Depois de acertar uma nota, ela sai do conjunto das não
+// resolvidas — e por isso deixa de estar "perto" para efeitos
+// do findClosestUnresolvedEvent(). Uma segunda batida em cima
+// dela seria contada como stray.
+//
+// Isso é ruído do gesto, não erro de leitura: ignora-se.
+// ============================================================
+
+function isNearResolvedEvent(elapsedMs, okWindow) {
+  for (const event of GAME.events) {
+    if (!GAME.eventResults.has(event.id)) continue;
+
+    if (Math.abs(elapsedMs - getEventTimeMs(event)) <= okWindow) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ============================================================
 // JOGADOR BATE NUMA FILA
 // ============================================================
 
@@ -192,6 +215,10 @@ function tryLaneHit(lane) {
   // Não existe sequer uma nota perto.
   // Isto pune "button mashing".
   if (!closestEvent || Math.abs(closestDifference) > okWindow) {
+    // ... a não ser que seja uma repetição de uma nota
+    // acabada de tocar, que não custa nada.
+    if (isNearResolvedEvent(elapsedMs, okWindow)) return;
+
     registerFailure("stray");
     return;
   }

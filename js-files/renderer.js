@@ -76,6 +76,7 @@ function drawScore(
 
   drawScoreLabel(area, isActive);
   drawScoreLaneGuides(area);
+  drawScoreSubdivisionGrid(area);
   drawScoreBeatGrid(area);
 
   // A linha é decidida por ÁREA: dá um degrau intermédio em
@@ -720,6 +721,58 @@ function drawScoreLaneGuides(area) {
     );
   }
 }
+
+// ============================================================
+// DESENHO — GRELHA DE SUBDIVISÕES
+//
+// Uma marca curta por fila, centrada na linha onde as notas
+// caem: cada fila fica com a sua régua e a subdivisão lê-se
+// onde interessa, em vez de só nas bordas da área.
+//
+// A subdivisão 0 não é desenhada — é o tempo, e esse já tem a
+// linha inteira de drawScoreBeatGrid(). O meio do tempo (o
+// "e") leva uma marca mais longa e mais clara.
+// ============================================================
+
+const SUBDIVISION_TICKS = {
+  halfBeat: { length: 12, shade: 80 },
+  other: { length: 6, shade: 60 }
+};
+
+function drawScoreSubdivisionGrid(area) {
+  const config = getCurrentLevelConfig();
+
+  if (!config.showSubdivisionGrid) return;
+
+  const totalSubdivisions =
+    config.beatsPerBar * config.subdivisionsPerBeat;
+
+  const halfBeat = config.subdivisionsPerBeat / 2;
+
+  strokeWeight(1);
+
+  for (let index = 0; index < totalSubdivisions; index++) {
+    const subIndex = index % config.subdivisionsPerBeat;
+
+    if (subIndex === 0) continue;
+
+    const tick = subIndex === halfBeat
+      ? SUBDIVISION_TICKS.halfBeat
+      : SUBDIVISION_TICKS.other;
+
+    const x = getXInArea(area, index / totalSubdivisions);
+    const half = tick.length / 2;
+
+    stroke(tick.shade);
+
+    for (const laneName of LANE_ORDER) {
+      const y = getLaneYInArea(area, laneName);
+
+      line(x, y - half, x, y + half);
+    }
+  }
+}
+
 function drawScoreBeatGrid(area) {
   const config =
     getCurrentLevelConfig();

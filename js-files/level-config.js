@@ -25,6 +25,7 @@
 //   allowLaneChangesWithinCell  cada nota da célula muda de fila
 //
 // VISIBILIDADE (não muda as regras, só a informação dada)
+//   showSubdivisionGrid   riscos finos nas subdivisões do tempo
 //   showScorePath         linha no compasso ativo
 //   showPreviewPath       linha no preview (defeito: = showScorePath)
 //   showScoreTrail        rasto atrás da bola quando não há linha

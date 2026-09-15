@@ -350,6 +350,17 @@ function createLevelRules({
   // tocar e perder só a antecipação do compasso seguinte.
   // ----------------------------------------------------------
 
+  // GRELHA DE SUBDIVISÕES
+  //
+  // Riscos finos nas posições em que as notas podem cair,
+  // dentro de cada tempo. Não revelam nada: desenham a grelha,
+  // não o que está escrito nela — por isso continuam a fazer
+  // sentido mesmo com visibleBeatsAhead ligado.
+  //
+  // Desligar deixa só os tempos: a subdivisão passa a ser
+  // sentida em vez de lida.
+  showSubdivisionGrid = true,
+
   // Linha que une os pontos no compasso ATIVO.
   showScorePath = true,
 
@@ -399,6 +410,7 @@ function createLevelRules({
     allowLaneChangesWithinCell,
     minNotesPerBar,
     introMinNotesPerBar,
+    showSubdivisionGrid,
     showScorePath,
     showPreviewPath,
     showScoreTrail,

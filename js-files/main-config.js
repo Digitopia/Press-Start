@@ -1,4 +1,46 @@
+// Espaço de desenho fixo. Todo o renderer.js posiciona e
+// dimensiona em relação a estes 960x540 — nunca ao tamanho real
+// da janela. sketch.js escala este espaço para o ecrã (ver
+// getScreenScale() e draw()), por isso mudar aqui muda a
+// proporção do jogo inteiro.
 const SCREEN_SIZE = { width: 960, height: 540 };
+
+// ============================================================
+// TAMANHOS DE TEXTO
+//
+// Todos os textSize() do jogo, num sítio só. Cada nome descreve
+// ONDE o tamanho é usado, para poder ser ajustado sem caçar
+// números soltos por dentro do renderer.js.
+//
+// Os valores são medidos no espaço de desenho acima, não em
+// pixels do ecrã: escalam todos juntos com o resto do jogo.
+// ============================================================
+
+const FONT_SIZES = {
+  // partituras
+  scoreLabel: 11,   // "ACTIVE" / "PREVIEW" por cima de cada partitura
+  beatNumber: 9,    // número do tempo na grelha de subdivisões
+
+  // HUD do jogo (topo e rodapé)
+  hudLabel: 7,      // legendas das barras do HUD (LEVEL / HEALTH)
+  headerTitle: 22,  // "PRESS START" no topo
+  judgement: 24,    // PERFECT / GOOD / OK / MISS
+  footer: 10,       // "SCORE ... COMBO ..." no rodapé
+
+  // overlays de transição (countdown, próximo nível, vida perdida)
+  countdownNumber: 72,    // número grande da contagem
+  overlayLevelLabel: 56,  // "LEVEL X" / "LIFE LOST"
+  overlayHud: 26,         // linha de info do próximo nível (BPM, LIVES)
+  overlaySubHud: 16,      // linha de info da vida perdida
+
+  // game over
+  gameOverTitle: 70,  // "GAME OVER"
+  gameOverHud: 14,    // linha de info do game over
+
+  // standby
+  standbyTitle: 60,   // título do ecrã de espera
+  standbyPrompt: 16   // "PRESS ANY BUTTON TO START"
+};
 
 // ============================================================
 // CONFIGURAÇÃO PARTITURAS

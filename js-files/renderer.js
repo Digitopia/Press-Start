@@ -4,7 +4,7 @@
 
 function getScoreAreas() {
   const totalWidth =
-    width -
+    SCREEN_SIZE.width -
     SCORE_LAYOUT.marginX * 2 -
     SCORE_LAYOUT.gap;
 
@@ -110,7 +110,7 @@ function drawScoreLabel(area, isActive) {
   noStroke();
 
   textAlign(LEFT, CENTER);
-  textSize(11);
+  textSize(FONT_SIZES.scoreLabel);
   textStyle(BOLD);
 
   fill(isActive ? 220 : 100);
@@ -440,7 +440,7 @@ function drawScoreBall(area, events) {
 
 function getPointOnTimedPath(points, t) {
   if (points.length === 0) {
-    return { x: width / 2, y: height / 2 };
+    return { x: SCREEN_SIZE.width / 2, y: SCREEN_SIZE.height / 2 };
   }
 
   const safeT = constrain(t, 0, 1);
@@ -493,7 +493,6 @@ const HUD_LAYOUT = {
   // barras
   barWidth: 260,
   barHeight: 6,
-  labelSize: 7,
 
   // lado de cada "pixel" dos corações.
   // 6 linhas x 4 = 24, a altura do bloco.
@@ -515,10 +514,10 @@ function drawHeader() {
   // Nome do jogo, centrado e sozinho.
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
-  textSize(22);
+  textSize(FONT_SIZES.headerTitle);
   fill(235);
 
-  text("PRESS START", width / 2, titleY);
+  text("PRESS START", SCREEN_SIZE.width / 2, titleY);
 
 
   // ----------------------------------------------------------
@@ -544,7 +543,7 @@ function drawHeader() {
   // ----------------------------------------------------------
 
   drawHudMeter(
-    width - HUD_LAYOUT.margin - HUD_LAYOUT.barWidth,
+    SCREEN_SIZE.width - HUD_LAYOUT.margin - HUD_LAYOUT.barWidth,
     "HEALTH",
     RIGHT,
     GAME.health / HEALTH.max,
@@ -559,7 +558,7 @@ function drawHeader() {
 function drawHudMeter(x, label, labelAlign, ratio, color) {
   noStroke();
 
-  textSize(HUD_LAYOUT.labelSize);
+  textSize(FONT_SIZES.hudLabel);
   textAlign(labelAlign, TOP);
   fill(120);
 
@@ -662,7 +661,7 @@ function drawLivesHearts() {
     GAME.maxLives * heartWidth +
     (GAME.maxLives - 1) * HUD_LAYOUT.heartGap;
 
-  const startX = width / 2 - totalWidth / 2;
+  const startX = SCREEN_SIZE.width / 2 - totalWidth / 2;
 
   // Centrado na altura do bloco.
   const y =
@@ -823,7 +822,7 @@ function drawScoreBeatGrid(area) {
         CENTER
       );
 
-      textSize(9);
+      textSize(FONT_SIZES.beatNumber);
 
       text(
         beat + 1,
@@ -844,11 +843,11 @@ function drawJudgement() {
   if (GAME.judgementTimer <= 0) return;
 
   textAlign(CENTER, CENTER);
-  textSize(24);
+  textSize(FONT_SIZES.judgement);
 
   fill(...(JUDGEMENT_COLORS[GAME.lastJudgement] ?? [255, 70, 70]));
 
-  text(GAME.lastJudgement, width / 2, height - 70);
+  text(GAME.lastJudgement, SCREEN_SIZE.width / 2, SCREEN_SIZE.height - 70);
 
 }
 
@@ -863,13 +862,13 @@ function drawFooter() {
 
   noStroke();
   textAlign(CENTER, CENTER);
-  textSize(10);
+  textSize(FONT_SIZES.footer);
   fill(200);
 
   text(
     `SCORE ${GAME.score}   ·   COMBO x${GAME.combo}`,
-    width / 2,
-    height - 30
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height - 30
   );
 
   pop();
@@ -914,6 +913,26 @@ function drawGameArea() {
 }
 
 // ============================================================
+// FUNDO DOS OVERLAYS
+//
+// Pinta o canvas INTEIRO, não só o retângulo do jogo: em ecrãs
+// que não são 16:9 sobram barras de um dos lados, e um fundo
+// limitado a SCREEN_SIZE deixava-as com a cor de background(12)
+// enquanto o resto escurecia — a emenda dava à vista.
+//
+// getVisibleArea() (sketch.js) devolve essas barras já em
+// coordenadas do espaço de desenho.
+// ============================================================
+
+function fillVisibleScreen(...color) {
+  const area = getVisibleArea();
+
+  noStroke();
+  fill(...color);
+  rect(area.x, area.y, area.width, area.height);
+}
+
+// ============================================================
 // COUNTDOWN – OVERLAY
 // ============================================================
 
@@ -935,24 +954,17 @@ function drawCountdownOverlay() {
   push();
 
   // Fundo semi-transparente
-  noStroke();
-  fill(0, 140);
-  rect(
-    0,
-    0,
-    width,
-    height
-  );
+  fillVisibleScreen(0, 140);
 
   // Número
   fill(255);
   textAlign(CENTER, CENTER);
-  textSize(72);
+  textSize(FONT_SIZES.countdownNumber);
 
   text(
     number,
-    width / 2,
-    height / 2
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height / 2
   );
 
   pop();
@@ -1006,33 +1018,26 @@ function drawNextLevelOverlay() {
   push();
 
   // Fundo
-  noStroke();
-  fill(0, bgAlpha);
-  rect(
-    0,
-    0,
-    width,
-    height
-  );
+  fillVisibleScreen(0, bgAlpha);
 
   // Número
   fill(255, textAlpha);
   textAlign(CENTER, CENTER);
-  textSize(56);
+  textSize(FONT_SIZES.overlayLevelLabel);
 
   const levelText = `LEVEL ${GAME.level}`
 
   text(
     levelText,
-    width / 2,
-    height / 2 - 56
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height / 2 - 56
   );
 
-  textSize(72);
+  textSize(FONT_SIZES.countdownNumber);
   text(
     number,
-    width / 2,
-    height / 2 + 56
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height / 2 + 56
   );
 
 
@@ -1041,17 +1046,17 @@ function drawNextLevelOverlay() {
   fill(255, textAlpha);
   textStyle(NORMAL)
   textAlign(CENTER, CENTER);
-  textSize(26);
+  textSize(FONT_SIZES.overlayHud);
 
-  const hudY = height / 2 + height / 4;
+  const hudY = SCREEN_SIZE.height / 2 + SCREEN_SIZE.height / 4;
 
   const items = [
     `${config.bpm} BPM`,
     `LIVES x${GAME.lives}`
   ];
 
-  const left = width / 4;
-  const right = width - width / 4;
+  const left = SCREEN_SIZE.width / 4;
+  const right = SCREEN_SIZE.width - SCREEN_SIZE.width / 4;
 
   for (let i = 0; i < items.length; i++) {
     const x = map(i, 0, items.length - 1, left, right);
@@ -1084,38 +1089,31 @@ function drawLiveLostOverlay() {
 
   push();
 
-  translate(width / 2, height / 2);
+  translate(SCREEN_SIZE.width / 2, SCREEN_SIZE.height / 2);
   scale(zoomScale);
-  translate(-width / 2, -height / 2);
+  translate(-SCREEN_SIZE.width / 2, -SCREEN_SIZE.height / 2);
 
   // Fundo semi-transparente
-  noStroke();
-  fill(0, 140);
-  rect(
-    0,
-    0,
-    width,
-    height
-  );
+  fillVisibleScreen(0, 140);
 
   // Número
   fill(255, 70, 70);
   textAlign(CENTER, CENTER);
-  textSize(56);
+  textSize(FONT_SIZES.overlayLevelLabel);
 
   const levelText = `LIFE LOST`
 
   text(
     levelText,
-    width / 2,
-    height / 2 - 56
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height / 2 - 56
   );
 
-  textSize(72);
+  textSize(FONT_SIZES.countdownNumber);
   text(
     number,
-    width / 2,
-    height / 2 + 56
+    SCREEN_SIZE.width / 2,
+    SCREEN_SIZE.height / 2 + 56
   );
 
 
@@ -1123,11 +1121,11 @@ function drawLiveLostOverlay() {
 
   textStyle(NORMAL)
   textAlign(CENTER, CENTER);
-  textSize(16);
+  textSize(FONT_SIZES.overlaySubHud);
 
-  const hudY = height / 2 + height / 4;
+  const hudY = SCREEN_SIZE.height / 2 + SCREEN_SIZE.height / 4;
 
-  text(`LEVEL PROGRESS LOST   ·   LIVES x${GAME.lives}`, width / 2, hudY);
+  text(`LEVEL PROGRESS LOST   ·   LIVES x${GAME.lives}`, SCREEN_SIZE.width / 2, hudY);
 
   pop();
 }
@@ -1168,22 +1166,20 @@ function drawGameOverOverlay() {
   if (showTitle) {
     push();
 
-    noStroke();
-    fill(0, 200);
-    rect(0, 0, width, height);
+    fillVisibleScreen(0, 200);
 
 
     fill(255, 70, 70);
     textAlign(CENTER, CENTER);
-    textSize(70);
+    textSize(FONT_SIZES.gameOverTitle);
 
     // Jitter por frame, não uma animação com curva — treme desde
     // o primeiro frame em que aparece, sem precisar de arranque.
     const shakeAmount = 5;
     text(
       "GAME OVER",
-      width / 2 + random(-shakeAmount, shakeAmount),
-      height / 2 + random(-shakeAmount, shakeAmount)
+      SCREEN_SIZE.width / 2 + random(-shakeAmount, shakeAmount),
+      SCREEN_SIZE.height / 2 + random(-shakeAmount, shakeAmount)
     );
 
 
@@ -1192,9 +1188,9 @@ function drawGameOverOverlay() {
     // ----------------------------------------------------------
     textStyle(NORMAL)
     textAlign(CENTER, CENTER);
-    textSize(14);
+    textSize(FONT_SIZES.gameOverHud);
 
-    const hudY = height - height / 4;
+    const hudY = SCREEN_SIZE.height - SCREEN_SIZE.height / 4;
 
     const items = [
       `LEVEL ${GAME.level}`,
@@ -1204,7 +1200,7 @@ function drawGameOverOverlay() {
     ];
 
     const left = 90;
-    const right = width - 150;
+    const right = SCREEN_SIZE.width - 150;
 
     for (let i = 0; i < items.length; i++) {
       const x = map(i, 0, items.length - 1, left, right);
@@ -1258,7 +1254,7 @@ function drawStandbyOverlay() {
     cycleT < 2 * STANDBY_CYCLE_HOLD_FRAMES + STANDBY_CYCLE_GAP_FRAMES;
 
   textAlign(LEFT, CENTER);
-  textSize(60);
+  textSize(FONT_SIZES.standbyTitle);
 
   const titleOutlineWeight = 6;
   strokeWeight(titleOutlineWeight);
@@ -1268,14 +1264,14 @@ function drawStandbyOverlay() {
   // só espaçamento.
   const letterGap = titleOutlineWeight * 1.5 + 10;
 
-  const titleY = height / 2 - 30;
+  const titleY = SCREEN_SIZE.height / 2 - 30;
 
   let totalWidth = -letterGap;
   for (const letter of STANDBY_TITLE) {
     totalWidth += textWidth(letter) + letterGap;
   }
 
-  let x = width / 2 - totalWidth / 2;
+  let x = SCREEN_SIZE.width / 2 - totalWidth / 2;
 
   // O contorno só aparece na fase branca; as letras (brancas)
   // ficam sempre visíveis, sem mudar de posição.
@@ -1295,7 +1291,7 @@ function drawStandbyOverlay() {
   }
 
   noStroke();
-  textSize(16);
+  textSize(FONT_SIZES.standbyPrompt);
 
   const promptY = titleY + 70;
 
@@ -1303,12 +1299,12 @@ function drawStandbyOverlay() {
     const accentColor = inRedHold ? [255, 70, 70] : [255, 255, 255];
 
     const middleWidth = textWidth(STANDBY_PROMPT_MIDDLE);
-    const leftEdge = width / 2 - middleWidth / 2 - STANDBY_PROMPT_GAP;
-    const rightEdge = width / 2 + middleWidth / 2 + STANDBY_PROMPT_GAP;
+    const leftEdge = SCREEN_SIZE.width / 2 - middleWidth / 2 - STANDBY_PROMPT_GAP;
+    const rightEdge = SCREEN_SIZE.width / 2 + middleWidth / 2 + STANDBY_PROMPT_GAP;
 
     textAlign(CENTER, CENTER);
     fill(255);
-    text(STANDBY_PROMPT_MIDDLE, width / 2, promptY);
+    text(STANDBY_PROMPT_MIDDLE, SCREEN_SIZE.width / 2, promptY);
 
     textAlign(RIGHT, CENTER);
     fill(...accentColor);
@@ -1345,9 +1341,7 @@ function drawScreenWipe(startFrame) {
     ? map(progress, 0, cutProgress, 0, 255)
     : map(progress, cutProgress, 1, 255, 0);
 
-  noStroke();
-  fill(0, bgAlpha);
-  rect(0, 0, width, height);
+  fillVisibleScreen(0, bgAlpha);
 }
 
 function drawStandbyExitOverlay() {

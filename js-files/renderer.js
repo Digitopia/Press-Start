@@ -1137,14 +1137,22 @@ function drawGameOverOverlay() {
     push();
 
     noStroke();
-    fill(0, 140);
+    fill(0, 200);
     rect(0, 0, width, height);
 
 
     fill(255, 70, 70);
     textAlign(CENTER, CENTER);
-    textSize(56);
-    text("GAME OVER", width / 2, height / 2);
+    textSize(70);
+
+    // Jitter por frame, não uma animação com curva — treme desde
+    // o primeiro frame em que aparece, sem precisar de arranque.
+    const shakeAmount = 4;
+    text(
+      "GAME OVER",
+      width / 2 + random(-shakeAmount, shakeAmount),
+      height / 2 + random(-shakeAmount, shakeAmount)
+    );
 
 
     // ----------------------------------------------------------

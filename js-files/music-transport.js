@@ -1,9 +1,8 @@
 // ============================================================
 // TRANSPORT MUSICAL
 //
-// Agenda um compasso de cada vez no relógio do AudioContext.
-// O jogo e a música partilham a mesma origem temporal, evitando
-// que o acompanhamento se afaste visualmente da partitura.
+// Agenda compasso a compasso no relógio do AudioContext, com a
+// mesma origem temporal do jogo.
 // ============================================================
 
 const MUSIC_TRANSPORT = {
@@ -13,34 +12,18 @@ const MUSIC_TRANSPORT = {
   sessionGain: null,
   activeSources: new Set(),
 
-  // Uma memória por voz de semicolcheias. A nota e o próximo
-  // ponto de mudança usam beats absolutos, atravessando compassos.
+  // Um estado por voz de semicolcheias, em beats absolutos.
   repeatedNoteStates: []
 };
 
 // ============================================================
 // METRÓNOMO
 //
-// O click é uma faixa agendada com antecedência, como qualquer
-// outra camada, e por isso arranca e pára junto com a música.
+// Agendado com antecedência, como a música, e arranca e pára
+// com ela. beatIndex conta desde o início do transporte.
 //
-// nextBeatTime é o instante do próximo click AINDA NÃO agendado.
-// beatIndex é absoluto: conta desde o início do transporte, o
-// que faz o beat 1 cair sempre em beatIndex % beatsPerBar === 0.
-//
-// O click tem bus PRÓPRIO, e não o sessionGain da música, por
-// duas razões que puxam em sentidos opostos:
-//
-//   - precisa de um gain nosso, senão não há maneira de o calar
-//     depois de agendado. E é sempre agendado com antecedência
-//     (MUSIC.scheduleAheadSeconds), por isso há sempre clicks no
-//     futuro quando o transporte pára — era isso que deixava
-//     ouvir o tempo 1 do compasso seguinte depois de mudar de
-//     nível;
-//   - mas não pode ser o sessionGain, que tem send para a reverb
-//     partilhada. O metrónomo fica fora dela de propósito (ver
-//     MUSIC.reverbSend em main-config.js): é referência de
-//     tempo, e a cauda turvava o ataque que o torna útil.
+// Bus próprio: permite calar clicks já agendados, e fica fora
+// da reverb para não turvar o ataque.
 // ============================================================
 
 const CLICK_TRANSPORT = {
@@ -49,8 +32,7 @@ const CLICK_TRANSPORT = {
   gain: null
 };
 
-// Quanto do volume do metrónomo sobra neste nível: 1 no nível 1,
-// 0 a partir de METRONOME.silentFromLevel (ver main-config.js).
+// 1 no nível 1, 0 a partir de METRONOME.silentFromLevel.
 function getMetronomeFade(level) {
   const lastAudibleLevel = METRONOME.silentFromLevel - 1;
 
@@ -69,8 +51,7 @@ function updateClickTransport() {
 
   const fade = getMetronomeFade(GAME.level);
 
-  // while e não if: se uma frame se atrasar, não se perde
-  // nenhum click — agendam-se todos os que couberem.
+  // while: uma frame atrasada não perde clicks.
   while (CLICK_TRANSPORT.nextBeatTime <= scheduleLimit) {
     const isDownbeat =
       CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
@@ -78,8 +59,7 @@ function updateClickTransport() {
     const click = isDownbeat ? METRONOME.downbeat : METRONOME.offbeat;
     const volume = click.volume * fade;
 
-    // Os contadores avançam na mesma quando o metrónomo já é
-    // mudo: o que se cala é o som, não o relógio.
+    // Mudo, o relógio continua a avançar.
     if (volume > 0) {
       scheduleBeep(
         click.frequency,
@@ -187,8 +167,7 @@ function scheduleBassLayer(barStartTime, chord, beatDurationSeconds, beatsPerBar
     releaseSeconds: 0.12
   });
 
-  // Em cada tempo restante há três opções equiprováveis:
-  // silêncio; contratempo; ou tempo + contratempo.
+  // Restantes tempos: silêncio, contratempo ou os dois.
   for (let beat = 1; beat < beatsPerBar; beat++) {
     const pattern = randomIntegerBetween([0, 2]);
     const noteBeats = [];
@@ -325,9 +304,7 @@ function startMusicTransport(startTime) {
   );
   MUSIC_TRANSPORT.sessionGain.connect(audioCtx.destination);
 
-  // Send para a sala partilhada com o jogador (core-audio.js).
-  // O sessionGain é recriado a cada start; o send tem de ser
-  // refeito com ele, mas a sala em si só é criada uma vez.
+  // Send para a reverb partilhada, refeito a cada start.
   sendToSharedReverb(MUSIC_TRANSPORT.sessionGain, MUSIC.reverbSend);
 
   MUSIC_TRANSPORT.playing = true;
@@ -338,8 +315,7 @@ function startMusicTransport(startTime) {
     nextChangeBeat: 0
   }));
 
-  // O metrónomo parte da mesma origem temporal que a música
-  // e que o playhead. Sem send para a reverb, de propósito.
+  // Metrónomo: mesma origem temporal, sem reverb.
   CLICK_TRANSPORT.gain = audioCtx.createGain();
   CLICK_TRANSPORT.gain.connect(audioCtx.destination);
 
@@ -359,10 +335,7 @@ function stopMusicTransport() {
 
   const stopTime = audioCtx.currentTime + 0.035;
 
-  // Mais curto que o stopTime da música: um click do metrónomo
-  // dura 30–35ms, portanto um fade tão longo como o dela
-  // deixava-o tocar por inteiro. Curto, mas em rampa — cortar a
-  // seco põe um estalo no lugar do click.
+  // Fade curto (o click dura ~30ms), mas em rampa para não estalar.
   const clickStopTime = audioCtx.currentTime + 0.008;
 
   if (CLICK_TRANSPORT.gain) {
@@ -375,10 +348,8 @@ function stopMusicTransport() {
     );
     clickGain.exponentialRampToValueAtTime(0.0001, clickStopTime);
 
-    // Os osciladores já agendados continuam ligados a este nó e
-    // desligam-se sozinhos quando acabam (ver scheduleTone());
-    // o que se perde aqui é só a nossa referência, para o
-    // próximo start criar um bus limpo.
+    // Os osciladores desligam-se sozinhos; o próximo start cria
+    // um bus novo.
     CLICK_TRANSPORT.gain = null;
   }
 

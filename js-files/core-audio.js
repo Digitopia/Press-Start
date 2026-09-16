@@ -5,13 +5,8 @@
 let audioCtx = null;
 
 // ============================================================
-// Margem mínima entre criar os nós e o instante de arranque.
-//
-// Entre criar os nós, ligá-los e o grafo ser committed, a
-// thread de áudio já avançou. Sem esta margem o setValueAtTime
-// do ataque fica ancorado num instante passado, o ramp é
-// avaliado a meio e o ganho arranca num valor não-nulo —
-// é essa descontinuidade que se ouve como "click".
+// Margem entre criar os nós e o arranque. Sem ela o ataque
+// ancora num instante passado e ouve-se um "click".
 // ============================================================
 
 const SFX_LOOKAHEAD_SECONDS = 0.005;
@@ -26,13 +21,8 @@ function ensureAudioContext() {
 }
 
 // ============================================================
-// DOIS CAMINHOS
-//
-// playBeep()     reação imediata a uma ação do jogador
-//                (acerto, falha, perda de vida)
-//
-// scheduleBeep() instante exato, para tudo o que pertence ao
-//                relógio musical (metrónomo, contagem)
+// playBeep()     imediato, para ações do jogador
+// scheduleBeep() instante exato, para o relógio musical
 // ============================================================
 
 function playBeep(frequency, durationMs, volume = 0.25) {
@@ -46,10 +36,8 @@ function playBeep(frequency, durationMs, volume = 0.25) {
   );
 }
 
-// destination omitido = direto à saída, sem passar por bus
-// nenhum. Quem precisa de poder calar os beeps depois de já os
-// ter agendado passa aqui o seu próprio gain (ver o metrónomo
-// em music-transport.js).
+// destination omitido = direto à saída. Passar um gain próprio
+// permite calar beeps já agendados (ex.: metrónomo).
 function scheduleBeep(frequency, durationMs, volume, startTime, destination) {
   if (!audioCtx) return null;
 
@@ -74,39 +62,18 @@ function midiNoteToFrequency(note) {
 // ============================================================
 // REVERB PARTILHADA
 //
-// O bus do jogador e o sessionGain da música são dois caminhos
-// paralelos que nunca se tocam — cada um vai direto ao seu
-// destination. Isto dá-lhes clareza, mas não lhes dá uma sala
-// em comum: soam lado a lado, não juntos.
+// Uma sala comum ao jogador e à música, para soarem juntos.
+// Cada bus liga-se com o seu próprio send (PLAYER_AUDIO /
+// MUSIC.reverbSend); returnVolume pesa a sala na mistura.
 //
-// Esta é essa sala. Um único ConvolverNode, com um impulso
-// sintético (não há nenhum ficheiro de áudio no jogo, gerar é
-// mais simples que ir buscar um). Cada emissor liga-se aqui
-// através do SEU PRÓPRIO gain de send — a sala é uma só, mas
-// a quantidade que cada bus lhe manda é regulada perto de onde
-// esse bus já configura o resto do seu volume
-// (PLAYER_AUDIO.reverbSend, MUSIC.reverbSend).
-//
-// returnVolume é o único botão a mais: quanto a sala em si
-// pesa na mistura final, independente do que cada lado lhe
-// manda.
-//
-// normalize = false de propósito. Por omissão o ConvolverNode
-// reescala o impulso para manter potência unitária — e o nosso
-// impulso é ruído denso ao longo de toda a duração (não um
-// impulso real de sala, que é sobretudo silêncio com uns picos),
-// por isso tem MUITA energia total. Com normalize ligado, o
-// browser baixava-lhe o ganho sozinho, por trás das costas do
-// reverbSend — subir o send quase não se ouvia. Desligado, o
-// volume da sala é só o que está aqui escrito.
+// normalize = false: o impulso de ruído denso seria atenuado
+// pelo browser e o reverbSend quase não se ouviria.
 // ============================================================
 
 const SHARED_REVERB = { input: null, convolver: null, returnGain: null };
 const SHARED_REVERB_RETURN_VOLUME = 0.15;
 
-// Afasta a cauda do impacto direto — sem isto a reverb começa
-// no mesmo instante da batida e cola-se a ela; com um pre-delay
-// curto, o ouvido separa as duas e a batida continua nítida.
+// Pre-delay: separa a cauda da batida, que fica mais nítida.
 const SHARED_REVERB_PRE_DELAY_SECONDS = 0.02;
 
 function createReverbImpulse(durationSeconds = 0.6, decay = 0.8) {
@@ -122,15 +89,12 @@ function createReverbImpulse(durationSeconds = 0.6, decay = 0.8) {
       const envelope = Math.pow(1 - progress, decay);
       const noise = Math.random() * 2 - 1;
 
-      // Passa-baixo de um polo, cada vez mais apertado ao longo
-      // da cauda: os agudos das primeiras reflexões sobrevivem,
-      // o fim da cauda já só tem grave. É isto que soa a SALA —
-      // ruído sem esta variação soa só a "hiss" parado.
+      // Passa-baixo cada vez mais fechado: a cauda escurece e
+      // soa a sala em vez de "hiss".
       const smoothing = 0.9 - progress * 0.85;
       smoothed += smoothing * (noise - smoothed);
 
-      // 0.6 compensa o normalize desligado: sem ele, ruído denso
-      // nos dois canais durante quase um segundo satura fácil.
+      // 0.6 evita saturar sem normalize.
       data[i] = smoothed * envelope * 0.6;
     }
   }
@@ -160,8 +124,7 @@ function getSharedReverbBus() {
   return SHARED_REVERB.input;
 }
 
-// Liga source à sala partilhada através de um gain de send
-// dedicado, sem tocar na ligação seca que source já tem.
+// Envia source para a sala, mantendo a ligação seca.
 function sendToSharedReverb(source, sendLevel) {
   const reverbBus = getSharedReverbBus();
 
@@ -214,20 +177,11 @@ function scheduleTone({
 
   osc.start(safeStartTime);
 
-  // O ramp exponencial chega a 0.0001 (−80 dB) exatamente em
-  // endTime, por isso cortar aí é inaudível.
+  // Em endTime o ganho já está a −80 dB: corte inaudível.
   osc.stop(endTime);
 
-  // ==========================================================
-  // LIMPEZA
-  //
-  // Sem isto o GainNode fica ligado ao destino para sempre e
-  // continua a ser processado a cada render quantum, mesmo
-  // em silêncio. Numa sessão longa isto acumula.
-  //
-  // addEventListener e NÃO onended: o trackMusicSource() do
-  // music-transport.js usa onended e sobreporia esta limpeza.
-  // ==========================================================
+  // Desliga os nós no fim para não acumularem. addEventListener
+  // e não onended, que é usado por trackMusicSource().
 
   osc.addEventListener("ended", () => {
     osc.disconnect();

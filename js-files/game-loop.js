@@ -4,8 +4,7 @@
 
 function updateGame() {
 
-  // Nada a atualizar: o jogo já foi reposto ao entrar neste
-  // estado e só se espera que o ecrã volte à horizontal.
+  // O jogo já foi reposto; só se espera voltar à horizontal.
   if (GAME.state === "rotate") return;
 
   if (!audioCtx) return;
@@ -35,25 +34,21 @@ function updateGame() {
   // ==========================================================
   // FIM DO COMPASSO
   //
-  // Não faz bounce.
-  // O playhead reaparece à esquerda.
-  //
-  // Somamos a duração ao relógio anterior em vez de usar
-  // currentTime, para evitar drift.
+  // Soma-se a duração ao relógio anterior (e não currentTime)
+  // para evitar drift.
   // ==========================================================
 
   while (elapsed >= durationSeconds) {
     finishCurrentBar();
 
-    // Perder uma vida (ou o jogo) interrompe o compasso:
-    // o relógio é reposto no fim da contagem.
+    // Vida perdida: o relógio é reposto no fim da contagem.
     if (GAME.state !== "playing") return;
 
     GAME.barStartAudioTime += durationSeconds;
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
-  // Agenda música E metrónomo com antecedência, os dois juntos.
+  // Agenda música e metrónomo com antecedência.
   updateMusicTransport();
 
   GAME.ballPosition = constrain(elapsed / durationSeconds, 0, 1);
@@ -68,10 +63,7 @@ function updateGame() {
 // ============================================================
 // MARCAR MISS EM EVENTOS NÃO RESOLVIDOS
 //
-// Usada tanto no fim do compasso (tudo o que falta é MISS)
-// como durante o compasso (só o que já passou da janela OK).
-//
-// O dano é proporcional ao número de notas falhadas de uma vez.
+// Dano proporcional ao número de notas falhadas.
 // ============================================================
 
 function markUnresolvedAsMiss(shouldMiss) {
@@ -94,39 +86,27 @@ function markUnresolvedAsMiss(shouldMiss) {
 // ============================================================
 // FIM DO COMPASSO
 //
-// Além de fechar as notas em falta, gera já o compasso
-// seguinte — é aqui que a aleatoriedade "entra em jogo".
-//
-// Exceção: mudando de nível, o compasso novo só se gera mais
-// tarde, quando o overlay cortar para preto (ver
-// nextLevelBarsPending e updateCountdown()) — para as notas do
-// nível seguinte não aparecerem antes do corte.
+// Fecha as notas em falta e gera o compasso seguinte. Ao mudar
+// de nível, a geração espera pelo corte para preto
+// (ver updateCountdown()).
 // ============================================================
 
 function finishCurrentBar() {
-  // Qualquer nota ainda não resolvida
-  // conta como MISS.
   markUnresolvedAsMiss(() => true);
 
-  // Se as últimas notas custaram uma vida (ou o jogo), não
-  // avançar o compasso nem deixar que changeLevel() substitua
-  // o estado que acabou de ser definido.
+  // Vida ou jogo perdido: não avançar nem mudar de nível.
   if (GAME.state !== "playing") return;
 
   GAME.barNumber++;
 
-  // o nível só avança no final de compassos, nunca a meio
+  // o nível só avança no final de compassos
   const levelChanged = changeLevel();
 
   if (levelChanged) {
-    // eventResults só se limpa quando o compasso novo for mesmo
-    // construído (updateCountdown()) — até lá o compasso que
-    // acabou de tocar continua visível como tocado, por baixo do
-    // fade out.
+    // eventResults fica até ao corte, para o compasso tocado
+    // continuar visível durante o fade out.
     GAME.nextLevelBarsPending = true;
   } else {
-    // Sem mudança de nível, o preview torna-se o compasso atual
-    // e é gerado um novo preview.
     GAME.eventResults.clear();
     advanceToNextBar();
   }
@@ -135,8 +115,7 @@ function finishCurrentBar() {
 // ============================================================
 // MISS AUTOMÁTICO
 //
-// Quando uma nota já ficou para trás mais do que a janela OK,
-// deixa de poder ser acertada.
+// Nota que já passou da janela OK deixa de poder ser acertada.
 // ============================================================
 
 function checkAutomaticMisses() {
@@ -198,12 +177,8 @@ function findClosestUnresolvedEvent(elapsedMs) {
 // ============================================================
 // BATIDA REPETIDA NUMA NOTA JÁ RESOLVIDA
 //
-// Depois de acertar uma nota, ela sai do conjunto das não
-// resolvidas — e por isso deixa de estar "perto" para efeitos
-// do findClosestUnresolvedEvent(). Uma segunda batida em cima
-// dela seria contada como stray.
-//
-// Isso é ruído do gesto, não erro de leitura: ignora-se.
+// Uma segunda batida numa nota já acertada contaria como stray.
+// É ruído do gesto, por isso ignora-se.
 // ============================================================
 
 function isNearResolvedEvent(elapsedMs, okWindow) {
@@ -228,15 +203,11 @@ function tryLaneHit(lane) {
   const elapsedMs = getCurrentElapsedMs();
   const okWindow = getCurrentLevelConfig().hitWindows.ok;
 
-  // Encontrar a nota NÃO RESOLVIDA
-  // temporalmente mais próxima.
   const { event: closestEvent, difference: closestDifference } = findClosestUnresolvedEvent(elapsedMs);
 
-  // Não existe sequer uma nota perto.
-  // Isto pune "button mashing".
+  // Nenhuma nota perto: pune "button mashing".
   if (!closestEvent || Math.abs(closestDifference) > okWindow) {
-    // ... a não ser que seja uma repetição de uma nota
-    // acabada de tocar, que não custa nada.
+    // ... exceto repetições de uma nota acabada de tocar.
     if (isNearResolvedEvent(elapsedMs, okWindow)) return;
 
     registerFailure("stray");
@@ -275,8 +246,7 @@ function registerSuccessfulHit(event, judgement) {
   GAME.combo++;
   GAME.maxCombo = Math.max(GAME.maxCombo, GAME.combo);
 
-  // O combo continua a contar sem limite no ecrã; o tecto
-  // aplica-se só ao multiplicador dos pontos.
+  // O tecto aplica-se só ao multiplicador, não ao combo mostrado.
   const earnedPoints =
     basePoints * Math.min(GAME.combo, SCORING.maxComboMultiplier);
 
@@ -286,9 +256,8 @@ function registerSuccessfulHit(event, judgement) {
   // ==========================================================
   // CURA
   //
-  // Porta rígida: abaixo de comboHealThreshold acertar não
-  // recupera nada. A partir daí a cura é fixa, definida só
-  // pelo julgamento — o combo abre a porta, não a alarga.
+  // Só a partir de comboHealThreshold; o valor depende apenas
+  // do julgamento.
   // ==========================================================
 
   if (GAME.combo >= HEALTH.comboHealThreshold) {
@@ -304,15 +273,9 @@ function registerSuccessfulHit(event, judgement) {
 // ============================================================
 // ERROS
 //
-// registerFailure centraliza o padrão comum: zera o combo,
-// mostra o feedback definido em FAILURES, toca o som da falha
-// e aplica o dano à health.
-//
-// count multiplica o dano — usado quando várias notas
-// falham ao mesmo tempo no fim do compasso.
-//
-// O dano é aplicado no fim porque damagePlayer() pode
-// gastar uma vida e sobrepor o texto de feedback.
+// Zera o combo, mostra feedback, toca o som e aplica dano
+// (× count). O dano vem no fim porque damagePlayer() pode
+// gastar uma vida e sobrepor o feedback.
 // ============================================================
 
 function registerFailure(type, count = 1) {
@@ -331,11 +294,7 @@ function registerFailure(type, count = 1) {
 // ============================================================
 // STANDBY
 //
-// exitStandby() (game-state.js) já marcou standbyExitStartFrame
-// no momento do botão. Esta função só espera o corte do screen
-// wipe (SCREEN_WIPE em main-config.js) para então arrancar o
-// countdown a sério — sem atraso extra, porque o wipe já é a
-// espera.
+// Espera o corte do screen wipe para arrancar o countdown.
 // ============================================================
 
 function updateStandby() {
@@ -351,9 +310,8 @@ function updateStandby() {
 // ============================================================
 // GAME OVER — SAÍDA
 //
-// Ao fim de GAME_OVER_EXIT.displayFrames, começa o screen wipe;
-// no corte, o jogo reseta-se por completo e volta ao standby —
-// tudo isto escondido atrás do preto opaco.
+// Após displayFrames começa o screen wipe; no corte, o jogo
+// reseta-se e volta ao standby.
 // ============================================================
 
 function updateGameOver() {
@@ -375,19 +333,12 @@ function updateGameOver() {
 // ============================================================
 // COUNTDOWN
 //
-// O ÁUDIO da contagem é agendado todo de uma vez, no arranque.
-// A deteção por frame fica apenas para o NÚMERO no ecrã
-// (GAME.countdownBeat é lido pelo renderer).
+// O áudio é agendado todo no arranque; o frame só atualiza o
+// número no ecrã.
 // ============================================================
 
-// extraDelaySeconds adia o arranque do countdown — usado pelo
-// "lifelost" para o countdown só começar depois de o zoom do
-// overlay acabar (ver LIFE_LOST_ZOOM em main-config.js).
-//
-// ballPosition e combo não se repõem aqui: cada chamador decide
-// quando (imediatamente, ou só no corte de uma transição — ver
-// beginNextLevelBar() em game-state.js), para nada mudar no
-// ecrã antes de dever mudar.
+// extraDelaySeconds: usado pelo "lifelost" para esperar o zoom
+// do overlay. ballPosition e combo são repostos pelo chamador.
 function beginCountdown(state, extraDelaySeconds = 0) {
   GAME.state = state;
 
@@ -424,12 +375,9 @@ function updateCountdown() {
   const elapsed =
     audioCtx.currentTime - GAME.countdownStartAudioTime;
 
-  // O estado do nível novo só se aplica no instante em que o
-  // overlay corta para preto (ver NEXT_LEVEL_TRANSITION em
-  // main-config.js e beginNextLevelBar() em game-state.js) —
-  // antes disso nada pode mudar no ecrã. Medido a partir de
-  // nextLevelAudioTime, não daqui: countdownStartAudioTime já
-  // inclui o atraso do fade inteiro.
+  // O nível novo só se aplica no corte para preto. Mede-se a
+  // partir de nextLevelAudioTime (countdownStartAudioTime já
+  // inclui o fade).
   if (
     GAME.nextLevelBarsPending &&
     audioCtx.currentTime - GAME.nextLevelAudioTime >=
@@ -441,12 +389,8 @@ function updateCountdown() {
 
   const beatIndex = floor(elapsed / beatDurationSeconds);
 
-  // Novo beat do countdown — só para o ecrã.
-  // O click já foi agendado em scheduleCountdownClicks().
-  //
-  // beatIndex >= 0 exclui o atraso extra (extraDelaySeconds):
-  // enquanto ele decorre, elapsed é negativo e não deve mexer
-  // no número mostrado.
+  // Atualiza o número mostrado. beatIndex < 0 durante o
+  // extraDelaySeconds.
   if (
     beatIndex >= 0 &&
     beatIndex !== GAME.countdownBeat &&

@@ -1,15 +1,10 @@
 // ============================================================
 // GERAÇÃO DE UM COMPASSO NOVO
 //
-// 1. Sorteia quais filas (cores) estão ativas neste compasso
-//    — sempre `laneCount` filas, escolhidas ao acaso.
-// 2. Percorre cada beat e decide, através de `density`, se recebe
-//    uma das células definidas em `allowedRhythms`.
-// 3. No primeiro compasso de cada nível, o beat 1 pode ser
-//    reservado como silêncio através de `allowNotesOnFirstBeat`.
-//
-// No fim, garante o mínimo de notas configurado, reforçando ou
-// acrescentando células sempre que a primeira passagem não chega.
+// 1. Sorteia `laneCount` filas ativas.
+// 2. `density` decide se cada beat recebe uma célula rítmica.
+// 3. `allowNotesOnFirstBeat` pode reservar o beat 1 em silêncio.
+// 4. Reforça células até atingir o mínimo de notas.
 // ============================================================
 
 function pickActiveLanes(laneCount) {
@@ -38,15 +33,9 @@ function pickRandomLane(lanes, lastLane, avoidRepeat) {
 
 // Preenche uma célula rítmica e devolve a última fila usada.
 //
-// laneChangesWithinCell decide quantas mudanças de fila cabem
-// lá dentro:
-//
-//   "none"   a célula inteira numa fila só
-//   "split"  a célula parte-se em dois blocos, um por fila
+//   "none"   a célula inteira numa fila
+//   "split"  dois blocos, um por fila
 //   "free"   cada nota escolhe fila
-//
-// Uma célula de uma nota não tem "dentro": os três modos
-// coincidem, e por isso o caso é tratado logo no primeiro ramo.
 function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
   const mode = config.laneChangesWithinCell;
 
@@ -65,13 +54,10 @@ function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
   }
 
   if (mode === "split") {
-    // Os dois blocos têm de ser contíguos no TEMPO, por isso a
-    // célula é lida por ordem, mesmo que venha escrita
-    // desordenada na configuração.
+    // Ordena para os blocos serem contíguos no tempo.
     const ordered = [...rhythm].sort((a, b) => a - b);
 
-    // O corte nunca cai na primeira nota: se caísse, não havia
-    // primeiro bloco e a célula voltava a ser de uma cor só.
+    // Nunca corta na primeira nota (senão seria uma cor só).
     const splitIndex = 1 + floor(random(ordered.length - 1));
 
     let lane = pickRandomLane(
@@ -81,10 +67,7 @@ function fillRhythmCell(pattern, rhythm, config, activeLanes, lastLane) {
     );
 
     for (let index = 0; index < ordered.length; index++) {
-      // A mudança é o objetivo deste modo, por isso o segundo
-      // bloco troca SEMPRE de fila — independentemente do
-      // avoidConsecutiveRepeat, que regula a fronteira entre
-      // células e não esta.
+      // O segundo bloco troca sempre de fila.
       if (index === splitIndex) {
         lane = pickRandomLane(activeLanes, lane, true);
       }
@@ -152,10 +135,8 @@ function validateGenerationRules(config, allowNotesOnFirstBeat) {
   }
 }
 
-// Reforça a estrutura rítmica até atingir o mínimo. Uma célula
-// já existente pode ser trocada por outra mais densa, evitando
-// situações em que todos os beats ficam ocupados mas o mínimo
-// continua por cumprir.
+// Adiciona ou troca células por outras mais densas até
+// atingir o mínimo de notas.
 function ensureMinimumRhythms(rhythms, config, allowNotesOnFirstBeat) {
   const target = getMinimumNotes(config, allowNotesOnFirstBeat);
   let noteCount = rhythms.reduce(
@@ -191,8 +172,7 @@ function ensureMinimumRhythms(rhythms, config, allowNotesOnFirstBeat) {
       : candidates;
     const chosen = pool[floor(random(pool.length))];
 
-    // validateGenerationRules() garante que existe sempre uma
-    // sequência de upgrades capaz de alcançar o mínimo.
+    // validateGenerationRules() garante que o mínimo é possível.
     rhythms[chosen.beatIndex] = chosen.rhythm;
     noteCount += chosen.addedNotes;
   }
@@ -205,8 +185,7 @@ function generateBar(config, { allowNotesOnFirstBeat = true } = {}) {
   const rhythms = new Array(config.beatsPerBar).fill(null);
 
   for (let beatIndex = 0; beatIndex < config.beatsPerBar; beatIndex++) {
-    // density decide SE este beat tem ritmo, ou fica em silêncio.
-    // No primeiro compasso de cada nível, o primeiro tempo é reservado.
+    // density decide se o beat tem ritmo ou fica em silêncio.
     if ((beatIndex > 0 || allowNotesOnFirstBeat) && random() < config.density) {
       rhythms[beatIndex] =
         config.allowedRhythms[floor(random(config.allowedRhythms.length))];
@@ -215,9 +194,8 @@ function generateBar(config, { allowNotesOnFirstBeat = true } = {}) {
 
   ensureMinimumRhythms(rhythms, config, allowNotesOnFirstBeat);
 
-  // Só depois de a estrutura rítmica estar fechada atribuímos
-  // as filas, sempre por ordem temporal. Assim, a regra de não
-  // repetir uma fila consecutivamente é realmente garantida.
+  // Filas atribuídas por ordem temporal, no fim, para garantir
+  // a regra de não repetir filas seguidas.
   const beats = [];
   let lastLane = null;
 
@@ -257,8 +235,7 @@ function buildEvents(config) {
       const lane = beat.pattern[subIndex];
       if (!lane) continue;
 
-      // Cada beat ocupa exatamente a mesma
-      // quantidade de tempo.
+      // Todos os beats têm a mesma duração.
       const beatProgress = beatIndex / beatCount;
       const subdivisionProgress = (subIndex / subdivisionCount) / beatCount;
       const t = beatProgress + subdivisionProgress;

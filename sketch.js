@@ -13,10 +13,7 @@ async function setup() {
     "assets/fonts/PressStart2P-Regular.ttf"
   );
 
-  // O canvas ocupa a janela toda e é desenhado à resolução REAL
-  // do ecrã — é isso que mantém o texto nítido numa TV grande.
-  // O tamanho de desenho do jogo continua a ser SCREEN_SIZE (ver
-  // applyScreenScale()).
+  // Canvas à resolução real da janela, para o texto ficar nítido.
   createCanvas(windowWidth, windowHeight);
 
   textFont(pixelFont);
@@ -33,16 +30,8 @@ function windowResized() {
 // ============================================================
 // ESCALA DO ECRÃ
 //
-// Este é o único sítio do projeto que conhece o tamanho real da
-// janela (width/height do p5). Tudo o que está em renderer.js
-// desenha no espaço fixo SCREEN_SIZE (960x540) e é esta função
-// que o encaixa no ecrã.
-//
-// Os dois eixos usam SEMPRE o mesmo fator — o menor dos dois
-// rácios — por isso o jogo nunca estica: sobra espaço à volta
-// (letterbox), nunca distorção. E como o scale() é do p5, o
-// desenho é feito à resolução real do ecrã em vez de ser uma
-// imagem pequena esticada: nítido em qualquer tamanho.
+// Encaixa SCREEN_SIZE na janela com o mesmo fator nos dois
+// eixos (letterbox, sem distorção).
 // ============================================================
 
 function getScreenScale() {
@@ -67,15 +56,8 @@ function applyScreenScale() {
 // ============================================================
 // ÁREA VISÍVEL
 //
-// SCREEN_SIZE é o ecrã do JOGO; o canvas costuma ser maior, com
-// barras de sobra de um dos lados. Esta função devolve o canvas
-// inteiro — barras incluídas — já convertido em coordenadas do
-// espaço de desenho, para os fundos dos overlays poderem cobrir
-// tudo em vez de pintarem só o retângulo do jogo e deixarem as
-// barras de outra cor (ver fillVisibleScreen() em renderer.js).
-//
-// Num ecrã 16:9 a área devolvida é exatamente SCREEN_SIZE, e x/y
-// são zero.
+// O canvas inteiro (com as barras) em coordenadas de desenho,
+// para os overlays cobrirem tudo.
 // ============================================================
 
 function getVisibleArea() {
@@ -95,13 +77,8 @@ function getVisibleArea() {
 // ============================================================
 // ORIENTAÇÃO
 //
-// O ecrã na vertical é um ESTADO do jogo, não um aviso por cima
-// dele (ver enterRotateMode() em game-state.js) — entrar reseta
-// a partida em vez de a deixar a correr escondida.
-//
-// Verificado a cada frame e não só em windowResized(): em vários
-// browsers móveis rodar o aparelho não dispara um resize fiável
-// a tempo.
+// Verificado a cada frame: em mobile rodar nem sempre dispara
+// windowResized() a tempo.
 // ============================================================
 
 function updateOrientation() {
@@ -145,9 +122,7 @@ function draw() {
     drawGameOverOverlay();
   }
 
-  // Independentes do ramo acima: continuam a desenhar-se por
-  // cima mesmo depois de o estado já ter mudado (ver
-  // drawScreenWipe() em renderer.js).
+  // Fora do if: os wipes continuam após a mudança de estado.
   drawStandbyExitOverlay();
   drawGameOverExitOverlay();
 

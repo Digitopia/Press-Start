@@ -12,13 +12,10 @@ const GAME = {
   // Eventos musicais construídos a partir do compasso atual
   events: [],
 
-  // Eventos musicais do compasso seguinte,
-  // usados apenas para PREVIEW.
+  // Eventos do compasso seguinte (preview)
   nextEvents: [],
 
-  // Lado do ecrã onde está o compasso ativo.
-  // Alterna a cada compasso: o preview passa a ativo sem
-  // mudar de sítio, e o preview novo nasce do outro lado.
+  // Lado do compasso ativo; alterna a cada compasso.
   activeSide: "left",
 
   // Resultado de cada evento no compasso atual
@@ -27,51 +24,33 @@ const GAME = {
 
   score: 0,
 
-  // Pontos conquistados na tentativa atual do nível.
-  // Ao perder uma vida, este progresso volta a zero sem apagar
-  // a pontuação total da partida.
+  // Pontos da tentativa atual; volta a zero ao perder uma vida.
   levelScore: 0,
 
   combo: 0,
   maxCombo: 0,
   barNumber: 1,
 
-  // Pontos necessários para concluir a tentativa atual.
-  // Calculado por getLevelTargetScore() a partir das regras do
-  // nível — este valor é só um seguro para antes do primeiro
-  // resetGame().
+  // Calculado por getLevelTargetScore(); valor provisório.
   levelTargetScore: 300,
 
   // ----------------------------------------------------------
   // VIDA
   //
-  // health desce com falhas e sobe com acertos.
-  // Chegando a 0 perde-se uma vida e a barra volta a encher.
-  // Sem vidas -> gameover.
-  //
-  // Estes valores são substituídos por resetGame() a partir de
-  // HEALTH (main-config.js), que é igual em todos os níveis —
-  // aqui ficam só valores seguros para antes do primeiro reset.
+  // health a 0 gasta uma vida; sem vidas -> gameover.
+  // Valores provisórios, repostos por resetGame() via HEALTH.
   // ----------------------------------------------------------
   health: 100,
   lives: 3,
   maxLives: 3,
 
-  // Instante (audioCtx.currentTime) em que a última vida foi
-  // perdida — origem do zoom do overlay em drawLiveLostOverlay().
+  // Instante da última vida perdida (zoom do overlay).
   lifeLostAudioTime: null,
 
-  // Verdadeiro entre o início da transição de nível e o corte
-  // para preto do overlay: só nesse instante é que
-  // buildCurrentLevel() gera o compasso do nível novo, para as
-  // notas não aparecerem antes do corte (ver updateCountdown()
-  // em game-loop.js e NEXT_LEVEL_TRANSITION em main-config.js).
+  // Compasso do nível novo à espera do corte para preto.
   nextLevelBarsPending: false,
 
-  // Instante (audioCtx.currentTime) em que a transição de nível
-  // começou — origem do fade em drawNextLevelOverlay(), separado
-  // de countdownStartAudioTime porque este último só marca o
-  // início do countdown a sério, adiado até a transição acabar.
+  // Instante em que a transição de nível começou (fade).
   nextLevelAudioTime: null,
 
   lastJudgement: "",
@@ -80,31 +59,21 @@ const GAME = {
   // Clock musical
   barStartAudioTime: null,
 
-  // O metrónomo é agendado pelo CLICK_TRANSPORT. countdownBeat
-  // fica só porque o renderer lê-o para desenhar o número da
-  // contagem.
+  // countdownBeat serve só para o número desenhado.
   countdownStartAudioTime: null,
   countdownBeat: null,
 
-  // Frame (frameCount) em que o "gameover" começou,
-  // usado só para controlar o piscar do overlay.
+  // Frame de início do gameover (piscar do overlay).
   gameOverStartFrame: null,
 
-  // Frame em que se começou a sair do standby (screen wipe) —
-  // null enquanto ainda se espera por um botão (ver
-  // exitStandby() e updateStandby() em game-loop.js).
+  // Frame de início do wipe de saída do standby; null à espera.
   standbyExitStartFrame: null,
 
-  // O mesmo para a saída do game over: frame em que o screen
-  // wipe começou. NÃO se repõe a null no reset a meio da
-  // transição (ver resetGame()) — o wipe continua a desenhar-se
-  // por cima do standby novo até acabar (ver
-  // drawGameOverExitOverlay() em renderer.js).
+  // Frame de início do wipe do game over. Não é reposto no
+  // reset, para o wipe acabar por cima do standby.
   gameOverExitStartFrame: null,
 
-  // Verdadeiro só enquanto se espera pelo corte do wipe do game
-  // over — impede updateGameOver() de chamar resetGame() mais
-  // do que uma vez por ciclo.
+  // Evita chamar resetGame() mais de uma vez por saída.
   gameOverExitPending: false
 };
 
@@ -124,16 +93,8 @@ function getBarDurationMs() {
 // ============================================================
 // ALVO DO NÍVEL
 //
-// O que rende uma passagem PERFEITA de barsToClearLevel
-// compassos, com as notas que este nível põe em cada um.
-//
-// Como os níveis densos têm mais notas por compasso, o alvo
-// sobe sozinho: o que se mantém constante é o número de
-// compassos, que é a unidade em que o jogo se joga.
-//
-// Exigir PERFECT é de propósito. Tocar tudo certo mas em GOOD
-// rende dois terços, portanto passa-se na mesma — só demora
-// mais um compasso ou dois.
+// Pontos de barsToClearLevel compassos todos em PERFECT.
+// Em GOOD também se passa, só demora mais uns compassos.
 // ============================================================
 
 function getLevelTargetScore(level) {
@@ -146,9 +107,6 @@ function getLevelTargetScore(level) {
 
 // ============================================================
 // VIDA / HEALTH
-//
-// Regras em HEALTH e FAILURES (main-config.js),
-// iguais em todos os níveis.
 // ============================================================
 
 function healPlayer(amount) {
@@ -191,23 +149,18 @@ function loseLife() {
   // Ainda há vidas: a barra volta a encher e o jogo continua.
   GAME.health = HEALTH.max;
 
-  // O overlay já anuncia a perda de vida —
-  // limpar o feedback da falha que a causou.
+  // O overlay já anuncia a perda: limpar o feedback.
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
 
   playPlayerLifeLost();
 
-  // Recomeçar o compasso: descartar o que estava a meio
-  // e gerar uma partitura nova para o compasso e o preview.
-  // buildCurrentLevel() já garante silêncio no primeiro tempo
-  // (ver comentário acima da função).
+  // Recomeça com uma partitura nova.
   GAME.eventResults.clear();
   buildCurrentLevel();
   GAME.ballPosition = 0;
 
-  // O countdown só arranca depois de o zoom do overlay acabar
-  // (ver LIFE_LOST_ZOOM em main-config.js e beginCountdown()).
+  // Countdown só depois do zoom do overlay.
   beginCountdown("lifelost", LIFE_LOST_ZOOM.durationSeconds);
 }
 
@@ -226,8 +179,7 @@ function generateBarEvents({ allowNotesOnFirstBeat = true } = {}) {
 
   const beats = generateBar(config, { allowNotesOnFirstBeat });
 
-  // buildEvents() espera config.beats,
-  // por isso criamos uma cópia temporária da configuração.
+  // buildEvents() espera config.beats.
   const tempConfig = {
     ...config,
     beats
@@ -242,13 +194,11 @@ function generateBarEvents({ allowNotesOnFirstBeat = true } = {}) {
 // ============================================================
 
 function buildCurrentLevel() {
-  // O primeiro compasso do nível começa com um tempo vazio,
-  // dando ao jogador tempo para ler a nova partitura.
+  // Primeiro tempo vazio, para dar tempo a ler.
   GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
 
-  // As duas partituras são refeitas de raiz e não há nada a
-  // herdar da direita, por isso a leitura recomeça à esquerda.
+  // Partituras novas: a leitura recomeça à esquerda.
   GAME.activeSide = "left";
 }
 
@@ -256,21 +206,15 @@ function buildCurrentLevel() {
 // ============================================================
 // COMEÇAR O NÍVEL NOVO (DEPOIS DA TRANSIÇÃO)
 //
-// changeLevel() já mudou GAME.level e começou o overlay, mas
-// chama esta função só mais tarde, no corte da transição (ver
-// updateCountdown() em game-loop.js) — até lá nada disto pode
-// mudar no ecrã, ou ver-se-ia o compasso antigo a saltar para o
-// estado do nível novo por baixo do fade out.
+// Chamada no corte da transição, para nada mudar no ecrã
+// antes do fade out acabar.
 // ============================================================
 
 function beginNextLevelBar() {
-  // Cada nível começa com uma tentativa limpa. A pontuação total
-  // continua acumulada, mas não conta como progresso no novo nível.
   GAME.levelScore = 0;
   GAME.levelTargetScore = getLevelTargetScore(GAME.level);
 
-  // A barra de vida volta ao máximo no início de cada nível.
-  // As vidas já gastas NÃO são devolvidas.
+  // A barra enche; as vidas gastas não voltam.
   resetHealth();
 
   GAME.ballPosition = 0;
@@ -286,14 +230,10 @@ function beginNextLevelBar() {
 // ============================================================
 
 function advanceToNextBar() {
-  // O preview passa a ser o compasso atual.
   GAME.events = GAME.nextEvents;
-
-  // Gerar imediatamente um novo preview.
   GAME.nextEvents = generateBarEvents();
 
-  // O preview vira ativo sem sair do lugar, portanto o lado
-  // ativo troca e o preview novo ocupa a área libertada.
+  // O preview fica no lugar; o novo nasce do outro lado.
   GAME.activeSide = GAME.activeSide === "left" ? "right" : "left";
 }
 
@@ -341,10 +281,7 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.standbyExitStartFrame = null;
   GAME.gameOverExitPending = false;
 
-  // gameOverExitStartFrame fica de fora de propósito: este reset
-  // corre a meio da saída do game over (ver updateGameOver()), e
-  // o screen wipe ainda precisa dele para acabar de se desenhar
-  // por cima do standby novo.
+  // gameOverExitStartFrame não se repõe: o wipe ainda o usa.
 
   buildCurrentLevel();
 }
@@ -352,10 +289,7 @@ function resetGame({ keepLevel = false } = {}) {
 // ============================================================
 // SAIR DO STANDBY
 //
-// Qualquer tecla ou nota MIDI chama isto enquanto GAME.state é
-// "standby" (ver input.js). O corte do screen wipe é que decide
-// quando o countdown a sério começa — ver updateStandby() em
-// game-loop.js.
+// Qualquer tecla ou nota. O countdown começa no corte do wipe.
 // ============================================================
 
 function exitStandby() {
@@ -371,18 +305,8 @@ function exitStandby() {
 // ============================================================
 // ROTATE — ECRÃ NA VERTICAL
 //
-// Não é um aviso por cima do jogo: é um estado como qualquer
-// outro. Entrar reseta a partida a sério, em vez de a deixar a
-// correr escondida por trás do aviso — com o ecrã na vertical o
-// jogador não vê as notas nem a barra de vida, portanto continuar
-// a contar MISSES seria roubar-lhe uma partida que ele não está
-// sequer a ver.
-//
-// Sair devolve ao standby, nunca ao jogo a meio: já não há nada
-// para retomar.
-//
-// Quem liga e desliga este estado é updateOrientation(), em
-// sketch.js.
+// Entrar reseta a partida (o jogador não vê o jogo); sair volta
+// ao standby. Controlado por updateOrientation() em sketch.js.
 // ============================================================
 
 function enterRotateMode() {
@@ -428,13 +352,8 @@ function changeLevel() {
 
     console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
 
-    // O resto do estado do nível novo (pontuação, vida, bola,
-    // compasso) só se aplica no corte da transição, em
-    // beginNextLevelBar() — até lá o ecrã fica congelado no que
-    // já lá estava. O nível já mudou aqui porque a contagem sai
-    // com o bpm novo — é ela que ensina o andamento do nível
-    // seguinte — mas só começa a sério depois de o fade do
-    // overlay acabar (ver NEXT_LEVEL_TRANSITION em main-config.js).
+    // O nível muda já, para a contagem sair no bpm novo; o resto
+    // do estado só se aplica no corte (beginNextLevelBar()).
     GAME.nextLevelAudioTime = audioCtx.currentTime;
     beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
 

@@ -1,34 +1,23 @@
 // ============================================================
 // ÁUDIO DO JOGADOR
 //
-// Tudo o que soa em resposta ao GESTO: o acerto, o erro, a
-// vida perdida, o fim de jogo. 
-//
-// Depende de: audioCtx e SFX_LOOKAHEAD_SECONDS (core-audio.js)
+// Sons de resposta ao jogador: acerto, erro, vida, fim de jogo.
 // ============================================================
 
 
 // ============================================================
 // CONFIGURAÇÃO
 //
-// lanes      que voz de percussão toca em cada fila
-// accent     o julgamento afeta a dinâmica, não só os pontos:
-//            um PERFECT bate mais forte que um OK
-// failures   o mesmo para os erros; null = silêncio
-//
-// Os nomes das vozes vêm de PERCUSSION_VOICES e de
-// FEEDBACK_VOICES, em baixo. 
+// lanes      voz de cada fila
+// accent     volume por julgamento
+// failures   voz de cada erro; null = silêncio
 // ============================================================
 
 const PLAYER_AUDIO = {
-    // Ganho do bus inteiro. O acompanhamento tem o seu próprio
-    // em MUSIC.masterVolume (main-config.js) — é a relação entre
-    // os dois que decide o peso do gesto contra a música.
+    // Relativo a MUSIC.masterVolume.
     masterVolume: 0.25,
 
-    // Quanto deste bus vai para a reverb partilhada com a
-    // música (core-audio.js). Sinal seco, antes da saturação —
-    // a sala recebe o gesto, não a distorção.
+    // Envio para a reverb, antes da saturação.
     reverbSend: 0.07,
 
     accent: {
@@ -37,34 +26,22 @@ const PLAYER_AUDIO = {
         OK: 0.6
     },
 
-    // A ordem segue LANE_ORDER, do agudo (blue) ao grave (red):
-    // a fila mais acima no ecrã é também a mais aguda.
+    // Do agudo (topo do ecrã) ao grave.
     lanes: {
         blue: { voice: "hihat", volume: 0.3 },
         green: { voice: "clap", volume: 0.7 },
-        // Mais baixa que as outras filas, para não dominar a mistura.
         yellow: { voice: "snare", volume: 0.25 },
-        // O kick é a fila mais fraca das quatro: uma fundamental
-        // grave e quieta quase não distorce no saturador do bus
-        // (ver comentário em cima de getPlayerBus) — sem
-        // distorção não há os harmónicos que dão corpo em
-        // colunas pequenas.
         red: { voice: "kick", volume: 0.35 }
     },
 
-    // As chaves são as de FAILURES (main-config.js).
-    //
-    // O miss é mudo de propósito: a nota que passou já não soou,
-    // e o silêncio onde devia estar uma batida é o feedback.
+    // Chaves de FAILURES. O miss é mudo: o silêncio é o feedback.
     failures: {
         miss: null,
         wrong: { voice: "thud", volume: 0.55 },
         stray: { voice: "tick", volume: 0.20 }
     },
 
-    // Estas duas são as únicas vozes longas do ficheiro. Ficam
-    // acima do resto na mistura de propósito: são raras, e cada
-    // uma marca o fim de alguma coisa.
+    // Vozes longas e raras, por isso mais altas.
     lifeLost: { voice: "fall", volume: 0.85 },
     gameOver: { voice: "collapse", volume: 1.00 }
 };
@@ -73,10 +50,7 @@ const PLAYER_AUDIO = {
 // ============================================================
 // BUS
 //
-// Todas as vozes passam por aqui, para haver um sítio único
-// onde baixar ou levantar o áudio do jogador.
-//
-// Vai direto ao destination e NÃO ao sessionGain da música.
+// Todas as vozes do jogador; vai direto ao destination.
 // ============================================================
 
 const PLAYER_BUS = { gain: null, saturator: null };
@@ -84,18 +58,8 @@ const PLAYER_BUS = { gain: null, saturator: null };
 // ============================================================
 // SATURAÇÃO DO BUS
 //
-// O kick cai até 48 Hz numa sinusoide pura — sem harmónicos.
-// Em colunas pequenas essa fundamental não se reproduz, e o
-// bombo desaparece; sobra só o click do transiente. O baixo do
-// transport, em contraste, é um "triangle" nas mesmas
-// frequências e por isso SOA nas mesmas colunas.
-//
-// A curva de tanh distorce todo o sinal do bus e gera
-// harmónicos da fundamental (96, 144, 192 Hz...). O ouvido
-// reconstrói o grave a partir deles, sem que a síntese em si
-// mude uma única frequência. É também o primeiro ponto onde
-// todas as vozes passam pela mesma não-linearidade — o que
-// começa a colá-las entre si.
+// tanh gera harmónicos para o grave se ouvir em colunas
+// pequenas, e cola as vozes entre si.
 // ============================================================
 
 function createSaturationCurve(amount = 3) {
@@ -135,22 +99,10 @@ function getPlayerBus() {
 // ============================================================
 // ENVOLVENTE
 //
-// A mesma forma para as três primitivas: sobe, segura, cai.
+// Sobe, segura (hold), cai. O hold dá corpo à batida.
 //
-// O hold é o que separa uma batida de um BAM. Sem ele o som
-// começa a cair no instante em que chega ao topo, e por mais
-// que se estique a cauda nunca ganha corpo.
-//
-// sustainLevel/sustainDecaySeconds/sustainHoldSeconds são
-// opcionais e acrescentam um DEGRAU PLANO à queda: cai depressa
-// do pico até sustainLevel (sustainDecaySeconds), fica ali
-// PARADO (sustainHoldSeconds — o mesmo truque do hold: um
-// setValueAtTime sem rampa a seguir), só depois começa a cauda
-// exponencial até 0.0001 em endTime. É o patamar plano que dá
-// corpo — duas rampas exponenciais em série, sem hold no meio,
-// não bastam: a diferença entre as taxas é pequena de mais para
-// se ouvir. Com sustainLevel a 0 (a omissão) não há degrau
-// nenhum: sobe, segura, cai.
+// sustain* (opcional) acrescenta um patamar plano a meio da
+// queda: pico -> sustainLevel -> parado -> cauda até 0.
 // ============================================================
 
 function applyPercussiveEnvelope(gain, {
@@ -194,10 +146,7 @@ function applyPercussiveEnvelope(gain, {
 // ============================================================
 // RUÍDO BRANCO
 //
-// Um único buffer de um segundo, partilhado por todas as
-// batidas. Cada AudioBufferSourceNode é descartável, mas o
-// buffer não: gerá-lo a cada nota seria encher o GC de lixo
-// nos níveis densos.
+// Um buffer de 1 s partilhado, para não gerar lixo por nota.
 // ============================================================
 
 let noiseBuffer = null;
@@ -267,9 +216,7 @@ function scheduleNoiseBurst({
     filter.connect(gain);
     gain.connect(bus);
 
-    // Entrar no buffer num ponto aleatório: duas batidas
-    // seguidas deixam de ser a MESMA amostra de ruído, que é o
-    // que dá aquele som de máquina a repetir-se.
+    // Offset aleatório, para batidas seguidas não soarem iguais.
     source.start(safeStartTime, Math.random() * buffer.duration);
     source.stop(endTime);
 
@@ -286,8 +233,7 @@ function scheduleNoiseBurst({
 // ============================================================
 // PRIMITIVA 2 — CORPO AFINADO COM QUEDA DE ALTURA
 //
-// É a queda rápida de frequência que transforma um oscilador
-// num bombo ou num tom. Sem ela é só um beep grave.
+// A queda de frequência transforma o beep num bombo ou tom.
 // ============================================================
 
 function schedulePercussiveTone({
@@ -340,8 +286,7 @@ function schedulePercussiveTone({
     osc.start(safeStartTime);
     osc.stop(endTime);
 
-    // addEventListener e NÃO onended, pela mesma razão do
-    // scheduleTone(): onended está reservado ao transporte.
+    // addEventListener: onended é do transporte.
     osc.addEventListener("ended", () => {
         osc.disconnect();
         gain.disconnect();
@@ -354,13 +299,8 @@ function schedulePercussiveTone({
 // ============================================================
 // PRIMITIVA 3 — METAL
 //
-// Vários quadrados em razões INARMÓNICAS, filtrados em
-// conjunto. É assim que o TR-808 faz o chimbau e o címbalo:
-// como as parciais não são múltiplos inteiros, o ouvido não
-// lhes encontra fundamental e ouve metal em vez de nota.
-//
-// É o que as vozes agudas usam em vez de ruído filtrado: ruído
-// dá um "chh" sem forma, isto dá um ataque com contorno.
+// Quadrados em razões inarmónicas, filtrados (como no TR-808):
+// soa a metal em vez de nota.
 // ============================================================
 
 const METALLIC_RATIOS = [1, 1.47, 1.79, 2.41, 2.93, 3.41];
@@ -393,8 +333,7 @@ function scheduleMetallicBurst({
     const endTime = applyPercussiveEnvelope(gain, {
         startTime: safeStartTime,
         durationSeconds,
-        // O ganho é dividido pelas parciais: seis quadrados em
-        // fase somam-se e o pico iria muito acima do pedido.
+        // Dividido pelas parciais, que se somam.
         volume: volume / ratios.length,
         attackSeconds,
         holdSeconds
@@ -415,8 +354,7 @@ function scheduleMetallicBurst({
         return osc;
     });
 
-    // Um único listener, no último a acabar — todos param no
-    // mesmo instante, por isso não vale a pena seis.
+    // Param todos juntos: basta um listener.
     oscillators[oscillators.length - 1].addEventListener("ended", () => {
         for (const osc of oscillators) osc.disconnect();
         filter.disconnect();
@@ -430,54 +368,33 @@ function scheduleMetallicBurst({
 // ============================================================
 // VOZES — PERCUSSÃO (ACERTO)
 //
-// Cada voz recebe (startTime, volume) e monta-se a partir das
-// primitivas. volume já vem com o peso da fila e o acento do
-// julgamento aplicados.
-//
-// Curtas e secas de propósito. No nível 10 são 5.6 notas por
-// segundo: qualquer cauda a mais deixa de ser uma batida e
-// passa a ser mancha.
-//
-// Uma voz por fila: kick, snare, clap e hihat, atribuídas em
-// PLAYER_AUDIO.lanes.
+// Cada voz recebe (startTime, volume) já com fila e acento.
+// Curtas e secas: no nível 10 são 5.6 notas/s.
 // ============================================================
 
 const PERCUSSION_VOICES = {
 
-    // Corpo em "triangle", não sine puro: uma sinusoide é limpa
-    // demais — zero harmónicos, por isso soa a blip sintético e
-    // depende só da saturação do bus para ganhar peso. Triangle
-    // já traz harmónicos próprios (a mesma razão do baixo do
-    // music-transport, ver comentário acima de getPlayerBus), o
-    // que dá peso E textura ao mesmo tempo.
+    // Corpo em triangle: harmónicos próprios, mais peso que sine.
     kick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.75,
             volume: volume * 0.95,
             startFrequency: 135,
-            // 46 Hz: fundo o suficiente para dar peso, mas ainda
-            // dentro do que colunas pequenas reproduzem — sem se
-            // OUVIR o grave, o resto lê-se como lama, não peso.
+            // Grave, mas ainda audível em colunas pequenas.
             endFrequency: 46,
-            // Queda rápida de propósito: esticar isto tira
-            // definição sem dar mais peso — o peso vem do
-            // patamar de sustain, não daqui.
+            // Rápida: o peso vem do sustain, não daqui.
             pitchDecaySeconds: 0.05,
             oscillator: "triangle",
             attackSeconds: 0.002,
             holdSeconds: 0.012,
-            // O corpo do bombo: cai para 42% e FICA ali 80ms — é
-            // o patamar que se sente como o bombo a "durar", não
-            // a rampa final.
+            // Patamar a 42% durante 80ms: o corpo do bombo.
             sustainLevel: 0.42,
             sustainDecaySeconds: 0.012,
             sustainHoldSeconds: 0.08
         });
 
-        // O click do ataque: sem ele o bombo perde o contraste
-        // entre grave e ataque e soa fino, mesmo com a
-        // fundamental mais forte.
+        // Click do ataque, para contrastar com o grave.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.32,
@@ -489,10 +406,7 @@ const PERCUSSION_VOICES = {
             attackSeconds: 0.0005
         });
 
-        // O click do baterista: alto e curtíssimo (18ms), não um
-        // "mid" arredondado, e com parâmetros distintos do ruído
-        // da tarola — se fossem iguais, as duas ler-se-iam como
-        // a mesma batida repetida.
+        // Click de ruído de 18ms, distinto do da tarola.
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.018,
@@ -503,12 +417,7 @@ const PERCUSSION_VOICES = {
             attackSeconds: 0.0003
         });
 
-        // Cauda grave: um sine fixo que fica a soar um pouco
-        // depois de o corpo principal já ter caído — a mesma
-        // técnica da cauda do fall() (mais abaixo neste ficheiro),
-        // encolhida ao tamanho de um bombo. Dá o "chão" que se
-        // sente mais do que se ouve, sem mexer na definição do
-        // ataque nem no ponto lá de cima.
+        // Cauda grave fixa: o "chão" que se sente.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 1.4,
@@ -520,11 +429,7 @@ const PERCUSSION_VOICES = {
         });
     },
 
-    // Duas peles afinadas mais a bordoneira. A bordoneira é um
-    // bandpass — highpass sem teto deixava passar o shimmer que
-    // é território do prato/hihat, e os dois liam-se como o
-    // mesmo instrumento. Com teto mantém o "zzz" vivo contra a
-    // pele de baixo sem invadir essa zona.
+    // Duas peles + bordoneira em bandpass (para não invadir o hihat).
     snare(startTime, volume) {
         schedulePercussiveTone({
             startTime,
@@ -536,8 +441,7 @@ const PERCUSSION_VOICES = {
             oscillator: "sine",
             attackSeconds: 0.001,
             holdSeconds: 0.006,
-            // Patamar curto: o mesmo truque do kick para dar
-            // corpo à fundamental, sem esticar a tarola toda.
+            // Patamar curto para dar corpo.
             sustainLevel: 0.42,
             sustainDecaySeconds: 0.008,
             sustainHoldSeconds: 0.03
@@ -566,9 +470,7 @@ const PERCUSSION_VOICES = {
         });
     },
 
-    // Duas reflexões juntas, e não mais: o que faz a palma é o
-    // atraso entre elas, não a quantidade. À terceira o ouvido
-    // deixa de ler um gesto e passa a ler cauda.
+    // Duas reflexões: o atraso entre elas faz a palma.
     clap(startTime, volume) {
         const reflections = [
             { offset: 0, volume: 0.9 },
@@ -598,10 +500,7 @@ const PERCUSSION_VOICES = {
         });
     },
 
-    // Metal, não ruído. É a fila mais aguda e, nos níveis
-    // densos, a que mais vezes toca seguida — por isso esta
-    // duração é a que arrisca mais mancha das quatro; testar em
-    // nível denso, não só isolado, antes de esticar mais.
+    // Metal. Testar em nível denso antes de alongar.
     hihat(startTime, volume) {
         scheduleMetallicBurst({
             startTime,
@@ -613,10 +512,7 @@ const PERCUSSION_VOICES = {
             q: 0.8
         });
 
-        // O "shhh": o metal sozinho dá o corpo, mas não a
-        // respiração de ar que um hihat de verdade tem por cima.
-        // Mais agudo que o teto da tarola (2600), para não voltar
-        // a confundir-se com ela.
+        // O "shhh" de ar, acima da tarola.
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.1,
@@ -633,29 +529,16 @@ const PERCUSSION_VOICES = {
 // ============================================================
 // VOZES — ERRO E CONSEQUÊNCIA
 //
-// Os dois erros são curtos, porque acontecem a meio do jogo e
-// não podem tapar a nota seguinte.
-//
-// As duas consequências são o contrário: o compasso já parou
-// quando elas tocam — loseLife() chama stopMusicTransport()
-// antes de qualquer som — e por isso podem ocupar o silêncio
-// todo que quiserem.
+// Erros curtos, para não tapar a nota seguinte. As
+// consequências tocam com a música já parada e podem ser longas.
 // ============================================================
 
 const FEEDBACK_VOICES = {
 
-    // Tempo certo, fila errada.
-    //
-    // Mini versão da anatomia do fall() (golpe, corpo, cauda),
-    // encolhida a ~0.2s — os erros são curtos de propósito, não
-    // podem tapar a nota seguinte. O corpo continua a ser dois
-    // triângulos dessintonizados: o batimento entre eles dá a
-    // sensação de coisa torta sem recorrer a ruído nem distorção.
-    // Sem hold e bem mais baixo do que as vozes de acerto — não é
-    // suposto soar a instrumento, é suposto soar a coisa pequena e
-    // errada.
+    // Tempo certo, fila errada. Um fall() em miniatura (~0.2s);
+    // dois tons desafinados dão a sensação de coisa torta.
     thud(startTime, volume) {
-        // O golpe, como no fall() — mas curtíssimo.
+        // Golpe curtíssimo.
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.025,
@@ -677,9 +560,7 @@ const FEEDBACK_VOICES = {
             attackSeconds: 0.004
         });
 
-        // Square em vez de triangle nesta segunda camada, só
-        // numa das duas: dá uma aresta extra ao batimento sem
-        // soar a instrumento de percussão.
+        // Square: aresta extra ao batimento.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.18,
@@ -691,8 +572,7 @@ const FEEDBACK_VOICES = {
             attackSeconds: 0.004
         });
 
-        // A cauda grave, como no fall() — mais aguda que o chão
-        // do kick (50Hz) para não voltar a confundir-se com ele.
+        // Cauda grave, acima do kick (50Hz).
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.20,
@@ -704,11 +584,8 @@ const FEEDBACK_VOICES = {
         });
     },
 
-    // Bateu sem nota nenhuma por perto. É de propósito o som
-    // mais pequeno do ficheiro: a punição a sério é o combo a
-    // zero, não o barulho. Grave e discreto: um registo agudo
-    // confundir-se-ia com o clap; este fica por baixo, sem se
-    // misturar.
+    // Bateu sem nota por perto. Pequeno e grave, para não
+    // se confundir com o clap.
     tick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
@@ -725,13 +602,11 @@ const FEEDBACK_VOICES = {
     // ==========================================================
     // A BARRA CHEGOU A ZERO — 1.3 s
     //
-    // Impacto, corpo, cauda. É a mesma anatomia do bombo
-    // esticada em dez vezes o tamanho: o hold de 60 ms é o que
-    // faz o corpo ficar lá em baixo antes de começar a cair.
+    // Impacto, corpo, cauda: um bombo dez vezes maior.
     // ==========================================================
 
     fall(startTime, volume) {
-        // O golpe. Grave e muito curto — é o "b" do bam.
+        // O golpe, grave e curto.
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.06,
@@ -755,8 +630,7 @@ const FEEDBACK_VOICES = {
             holdSeconds: 0.06
         });
 
-        // A cauda: uma sinusoide grave fixa, que fica a soar
-        // depois de o corpo já ter descido.
+        // A cauda: sine grave fixo.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 1.30,
@@ -771,12 +645,8 @@ const FEEDBACK_VOICES = {
     // ==========================================================
     // SEM VIDAS — 3.4 s
     //
-    // A mesma anatomia do fall, mas bem mais tempo e mais abaixo:
-    // o corpo vai buscar os 30 Hz, que já não é altura, é pressão.
-    //
-    // Os dois triângulos desafinados 4 Hz batem um contra o
-    // outro ao longo da queda toda — é o que impede a cauda de
-    // ser só um zumbido parado.
+    // Como o fall, mais longo e até ~30 Hz. Dois triângulos
+    // desafinados 4 Hz batem entre si durante a queda.
     // ==========================================================
 
     collapse(startTime, volume) {
@@ -815,9 +685,7 @@ const FEEDBACK_VOICES = {
             holdSeconds: 0.12
         });
 
-        // A cauda comprida (0.80s de patamar) é o que faz o fim
-        // de jogo demorar de facto mais a apagar-se — os
-        // triângulos já mal se ouvem a esta altura.
+        // Cauda longa (0.80s de hold).
         schedulePercussiveTone({
             startTime,
             durationSeconds: 3.40,
@@ -833,10 +701,6 @@ const FEEDBACK_VOICES = {
 
 // ============================================================
 // DISPARO
-//
-// SFX_LOOKAHEAD_SECONDS é a mesma margem do playBeep(): entre
-// criar os nós e o grafo ser committed a thread de áudio já
-// andou, e sem margem o ataque fica ancorado no passado.
 // ============================================================
 
 function triggerPlayerVoice(bank, setting) {

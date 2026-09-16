@@ -79,9 +79,7 @@ function drawScore(
   drawScoreSubdivisionGrid(area);
   drawScoreBeatGrid(area);
 
-  // A linha é decidida por ÁREA: dá um degrau intermédio em
-  // que se mantém o contorno do compasso que se está a tocar
-  // e se perde só a antecipação do seguinte.
+  // Linha decidida por área (ativo vs preview).
   const config = getCurrentLevelConfig();
 
   if (isActive ? config.showScorePath : config.showPreviewPath) {
@@ -127,13 +125,8 @@ function drawScoreLabel(area, isActive) {
 // ============================================================
 // REVELAÇÃO POR TEMPOS
 //
-// A bola avança de 0 a 1 dentro do compasso ativo. Para medir
-// a distância a uma nota do PREVIEW somamos 1 ao seu t, o que
-// coloca os dois compassos numa linha temporal contínua.
-//
-// Assim a janela de visibilidade atravessa a fronteira do
-// compasso sem caso especial: no fim do compasso ativo já se
-// acendem os primeiros tempos do preview.
+// Notas do preview somam 1 ao t, para a janela de visibilidade
+// atravessar a fronteira do compasso.
 // ============================================================
 
 function getEventOpacity(event, isActive) {
@@ -160,8 +153,7 @@ function drawScoreEvents(
   resultsMap,
   isActive
 ) {
-  // drawScore() já definiu o alpha base do preview (0.35).
-  // A revelação multiplica-o em vez de o substituir.
+  // A revelação multiplica o alpha base do preview.
   const baseAlpha = drawingContext.globalAlpha;
 
   for (const event of events) {
@@ -354,13 +346,8 @@ function drawScorePath(
 // ============================================================
 // DESENHO — RASTO
 //
-// O mesmo percurso do drawScorePath(), mas cortado na posição
-// da bola: só se desenha o que já passou. O último vértice é a
-// posição exata da bola, não o último evento, para o traço
-// acompanhar o movimento em vez de saltar de nota em nota.
-//
-// Desenhado segmento a segmento porque cada um tem a sua
-// opacidade, em função de há quantos tempos ficou para trás.
+// O percurso até à bola, segmento a segmento, cada um com
+// opacidade conforme há quantos tempos ficou para trás.
 // ============================================================
 
 function drawScoreTrail(area, events) {
@@ -431,11 +418,8 @@ function drawScoreBall(area, events) {
 // ============================================================
 // PONTO DA BOLA NO PERCURSO
 //
-// IMPORTANTE:
-// usamos o valor "t" de cada ponto,
-// não o comprimento geométrico da linha.
-//
-// Assim, uma diagonal não altera o ritmo.
+// Usa o "t" de cada ponto, não o comprimento da linha, para
+// as diagonais não alterarem o ritmo.
 // ============================================================
 
 function getPointOnTimedPath(points, t) {
@@ -472,15 +456,7 @@ function getPointOnTimedPath(points, t) {
 // ============================================================
 // DESENHO — HEADER
 //
-// A linha do HUD é um bloco de altura fixa com três elementos
-// alinhados: progresso do nível à esquerda, vidas ao centro,
-// health à direita.
-//
-// Cada barra tem a legenda no topo do bloco e a barra colada
-// ao fundo. Os corações ocupam a altura toda do bloco, para os
-// três conjuntos ficarem alinhados em cima e em baixo.
-//
-// Os números vivem no footer e nos overlays.
+// Bloco de altura fixa: progresso | vidas | health.
 // ============================================================
 
 const HUD_LAYOUT = {
@@ -724,13 +700,8 @@ function drawScoreLaneGuides(area) {
 // ============================================================
 // DESENHO — GRELHA DE SUBDIVISÕES
 //
-// Uma marca curta por fila, centrada na linha onde as notas
-// caem: cada fila fica com a sua régua e a subdivisão lê-se
-// onde interessa, em vez de só nas bordas da área.
-//
-// A subdivisão 0 não é desenhada — é o tempo, e esse já tem a
-// linha inteira de drawScoreBeatGrid(). O meio do tempo (o
-// "e") leva uma marca mais longa e mais clara.
+// Marca curta em cada fila. A subdivisão 0 é o tempo (já
+// desenhado); o meio do tempo tem marca maior.
 // ============================================================
 
 const SUBDIVISION_TICKS = {
@@ -877,16 +848,10 @@ function drawFooter() {
 // ============================================================
 // DESENHO — AS DUAS PARTITURAS
 //
-// O compasso ativo não muda de sítio quando passa a preview:
-// a área que era preview torna-se a ativa, e o preview novo
-// nasce na área que acabou de ser tocada.
+// O preview passa a ativo sem mudar de sítio. O preview é
+// sempre desenhado, mesmo sem notas visíveis.
 // ============================================================
 
-// O preview é uma área fixa do ecrã: está sempre lá, com a
-// etiqueta, as guias de fila e a grelha de tempos. O que pode
-// acontecer é ficar SEM NOTAS — quando visibleBeatsAhead ainda
-// não chegou ao compasso seguinte. A moldura vazia é, ela
-// própria, informação.
 function drawGameArea() {
   const areas =
     getScoreAreas();
@@ -915,13 +880,7 @@ function drawGameArea() {
 // ============================================================
 // FUNDO DOS OVERLAYS
 //
-// Pinta o canvas INTEIRO, não só o retângulo do jogo: em ecrãs
-// que não são 16:9 sobram barras de um dos lados, e um fundo
-// limitado a SCREEN_SIZE deixava-as com a cor de background(12)
-// enquanto o resto escurecia — a emenda dava à vista.
-//
-// getVisibleArea() (sketch.js) devolve essas barras já em
-// coordenadas do espaço de desenho.
+// Pinta o canvas inteiro, incluindo as barras fora de 16:9.
 // ============================================================
 
 function fillVisibleScreen(...color) {
@@ -973,17 +932,8 @@ function drawCountdownOverlay() {
 // ============================================================
 // NEXT LEVEL – OVERLAY
 //
-// Duas fases, uma a seguir à outra:
-//   1. o jogo desvanece para preto opaco, sem letras — o mesmo
-//      corte que updateCountdown() usa para saber quando gerar
-//      o compasso do nível novo (NEXT_LEVEL_TRANSITION em
-//      main-config.js);
-//   2. o texto faz fade in enquanto o fundo alivia até à
-//      opacidade normal, os dois juntos.
-//
-// A fase 2 já pode revelar a game area: o compasso novo (e o
-// lado ativo) já foram construídos no corte da fase 1, por isso
-// não há nada errado para se ver por trás.
+//   1. fade para preto opaco (o corte gera o nível novo)
+//   2. o fundo alivia e o texto aparece
 // ============================================================
 
 function drawNextLevelOverlay() {
@@ -1004,11 +954,11 @@ function drawNextLevelOverlay() {
   let bgAlpha, textAlpha;
 
   if (progress < cutProgress) {
-    // Fase 1: o jogo desvanece para preto opaco. Sem letras.
+    // Fase 1
     bgAlpha = map(progress, 0, cutProgress, 0, 255);
     textAlpha = 0;
   } else {
-    // Fase 2: o fundo alivia e o texto aparece, juntos.
+    // Fase 2
     const revealProgress = map(progress, cutProgress, 1, 0, 1);
 
     bgAlpha = lerp(255, 140, revealProgress);
@@ -1069,11 +1019,7 @@ function drawNextLevelOverlay() {
 // ============================================================
 // LIFE LOST – OVERLAY
 //
-// O overlay inteiro entra com um golpe de zoom (ver
-// getLifeLostZoomScale()). O número só aparece quando o zoom
-// termina: countdownBeat fica a null até lá (beginCountdown()
-// atrasa o countdown para isso), e mostra-se o total de tempos
-// como valor de repouso.
+// Entra com zoom. Até o countdown começar mostra o total de tempos.
 // ============================================================
 
 
@@ -1130,8 +1076,7 @@ function drawLiveLostOverlay() {
   pop();
 }
 
-// Ataque linear até ao pico, depois queda em raiz quadrada —
-// rápida no início, a assentar devagar no tamanho normal.
+// Subida linear, descida em raiz quadrada.
 function getLifeLostZoomScale() {
   const elapsed = audioCtx.currentTime - GAME.lifeLostAudioTime;
   const { attackSeconds, durationSeconds, peakScale } = LIFE_LOST_ZOOM;
@@ -1152,15 +1097,14 @@ function getLifeLostZoomScale() {
 // ============================================================
 // GAME OVER – OVERLAY
 //
-// Sem countdown: pisca 3 vezes (fica invisível nas fases
-// ímpares) e depois fica visível de forma sólida.
+// Pisca 3 vezes e depois fica fixo.
 // ============================================================
 
 function drawGameOverOverlay() {
   if (GAME.state !== "gameover") return;
 
   const blink = floor((frameCount - GAME.gameOverStartFrame) / 12);
-  const showTitle = blink >= 6 || blink % 2 === 0; // true nas fases "acesas" ou depois de acabar de piscar
+  const showTitle = blink >= 6 || blink % 2 === 0;
 
 
   if (showTitle) {
@@ -1173,8 +1117,7 @@ function drawGameOverOverlay() {
     textAlign(CENTER, CENTER);
     textSize(FONT_SIZES.gameOverTitle);
 
-    // Jitter por frame, não uma animação com curva — treme desde
-    // o primeiro frame em que aparece, sem precisar de arranque.
+    // Tremor aleatório por frame.
     const shakeAmount = 5;
     text(
       "GAME OVER",
@@ -1214,26 +1157,20 @@ function drawGameOverOverlay() {
 // ============================================================
 // STANDBY — ECRÃ DE ESPERA
 //
-// Ecrã cheio, não uma camada sobre o jogo (ver sketch.js): o
-// background(12) apaga o que já se tinha desenhado neste frame.
-// O título é branco; o contorno de cada letra (via stroke() no
-// próprio text()) cicla pelas cores das filas.
+// Título branco com contorno nas cores das filas.
 // ============================================================
 
 const STANDBY_TITLE = "TITULO TBD";
 
-// "PRESS" e "START" alternam de cor; o meio fica sempre branco.
-// Sem espaços nas strings — a folga é feita em pixels, mais
-// abaixo, porque o espaço embutido não estava a renderizar-se.
+// "PRESS" e "START" mudam de cor. Espaços feitos em pixels
+// (o espaço na string não renderizava).
 const STANDBY_PROMPT_PREFIX = "PRESS";
 const STANDBY_PROMPT_MIDDLE = "ANY BUTTON TO";
 const STANDBY_PROMPT_SUFFIX = "START";
 const STANDBY_PROMPT_GAP = 10;
 
-// Um só relógio para o ecrã inteiro: fase branca visível, pisca,
-// fase vermelha visível, pisca. O contorno do título segue a
-// mesma fase branca — só aparece quando a frase NÃO está a
-// vermelho.
+// Ciclo: branco, pisca, vermelho, pisca. O contorno do título
+// só aparece na fase branca.
 const STANDBY_CYCLE_HOLD_FRAMES = 40;
 const STANDBY_CYCLE_GAP_FRAMES = 10;
 
@@ -1259,9 +1196,7 @@ function drawStandbyOverlay() {
   const titleOutlineWeight = 6;
   strokeWeight(titleOutlineWeight);
 
-  // textWidth() só mede a letra, não o contorno — parte desta
-  // folga evita que o stroke invada a letra seguinte, o resto é
-  // só espaçamento.
+  // Folga para o contorno, que textWidth() não mede.
   const letterGap = titleOutlineWeight * 1.5 + 10;
 
   const titleY = SCREEN_SIZE.height / 2 - 30;
@@ -1273,8 +1208,6 @@ function drawStandbyOverlay() {
 
   let x = SCREEN_SIZE.width / 2 - totalWidth / 2;
 
-  // O contorno só aparece na fase branca; as letras (brancas)
-  // ficam sempre visíveis, sem mudar de posição.
   for (let i = 0; i < STANDBY_TITLE.length; i++) {
     const letter = STANDBY_TITLE[i];
     const lane = LANE_ORDER[i % LANE_ORDER.length];
@@ -1321,14 +1254,8 @@ function drawStandbyOverlay() {
 // ============================================================
 // ROTATE — ECRÃ NA VERTICAL
 //
-// Ecrã cheio, como o standby, e sem jogo por baixo: o estado já
-// foi todo reposto por enterRotateMode() (game-state.js).
-//
-// É o único ecrã centrado na ÁREA VISÍVEL em vez do retângulo do
-// jogo. Na vertical, esse retângulo é uma faixa estreita no meio
-// do ecrã — o aviso ficaria espremido lá dentro, com o ecrã todo
-// à volta vazio, que é o contrário do que ele precisa de ser.
-//
+// Centrado na área visível: na vertical o retângulo do jogo é
+// só uma faixa estreita.
 // ============================================================
 
 function drawRotateOverlay() {
@@ -1353,10 +1280,7 @@ function drawRotateOverlay() {
 // ============================================================
 // SCREEN WIPE
 //
-// Fundo preto sem conteúdo próprio: sobe a opaco até ao corte,
-// desce a zero até ao fim (ver SCREEN_WIPE em main-config.js).
-// drawStandbyExitOverlay() e drawGameOverExitOverlay() só
-// passam o seu próprio frame de início — o resto é igual.
+// Preto: sobe a opaco até ao corte, desce a zero até ao fim.
 // ============================================================
 
 function drawScreenWipe(startFrame) {

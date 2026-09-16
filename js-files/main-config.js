@@ -1,19 +1,10 @@
-// Espaço de desenho fixo. Todo o renderer.js posiciona e
-// dimensiona em relação a estes 960x540 — nunca ao tamanho real
-// da janela. sketch.js escala este espaço para o ecrã (ver
-// getScreenScale() e draw()), por isso mudar aqui muda a
-// proporção do jogo inteiro.
+// Espaço de desenho fixo, escalado para a janela em sketch.js.
 const SCREEN_SIZE = { width: 960, height: 540 };
 
 // ============================================================
 // TAMANHOS DE TEXTO
 //
-// Todos os textSize() do jogo, num sítio só. Cada nome descreve
-// ONDE o tamanho é usado, para poder ser ajustado sem caçar
-// números soltos por dentro do renderer.js.
-//
-// Os valores são medidos no espaço de desenho acima, não em
-// pixels do ecrã: escalam todos juntos com o resto do jogo.
+// Todos os textSize() do jogo, no espaço de desenho acima.
 // ============================================================
 
 const FONT_SIZES = {
@@ -60,12 +51,8 @@ const SCORE_LAYOUT = {
 // ============================================================
 // JANELAS DE ACERTO
 //
-// Cada janela ocupa uma fração do menor intervalo rítmico que
-// o nível consegue gerar. maxMs mantém os níveis mais lentos
-// dentro da tolerância original.
-//
-// OK fica abaixo de metade do intervalo mínimo, impedindo que
-// as janelas de duas notas consecutivas se sobreponham.
+// Fração do menor intervalo rítmico do nível, limitada a maxMs.
+// OK < 0.5 para as janelas de notas seguidas não se sobreporem.
 // ============================================================
 
 const DEFAULT_HIT_WINDOW_RULES = {
@@ -85,8 +72,7 @@ function getShortestRhythmIntervalSteps(allowedRhythms, subdivisionsPerBeat) {
     }
   }
 
-  // Também é possível haver notas muito próximas na fronteira
-  // entre dois beats, mesmo que cada célula isolada seja espaçada.
+  // Também na fronteira entre dois beats.
   for (const currentRhythm of allowedRhythms) {
     const currentLast = Math.max(...currentRhythm);
 
@@ -130,48 +116,30 @@ function createHitWindows({
 // ============================================================
 // METRÓNOMO
 //
-// O click é um andaime: está lá para se aprender onde cai o
-// tempo, e vai-se embora à medida que o tempo passa a estar na
-// cabeça de quem joga. A cada nível ouve-se menos, até ficar
-// mudo em silentFromLevel.
-//
-// É a mesma ideia das flags de visibilidade em level-config.js
-// (a linha, a grelha, o preview): tira-se informação, não se
-// mudam as regras. O tempo continua todo lá — o baixo ancora
-// sempre o primeiro tempo de cada compasso.
+// Ajuda a aprender o tempo; desce de volume a cada nível até
+// ficar mudo em silentFromLevel.
 // ============================================================
 
 const METRONOME = {
-  // O primeiro tempo é mais alto e mais agudo que os outros: diz
-  // ONDE começa o compasso, não só onde cai o tempo.
+  // Tempo 1 mais alto e agudo, marca o início do compasso.
   downbeat: { frequency: 520, durationMs: 35, volume: 0.14 },
   offbeat: { frequency: 440, durationMs: 30, volume: 0.08 },
 
-  // Nível a partir do qual o metrónomo não se ouve de todo. Até
-  // lá o volume desce em partes iguais, nível a nível.
-  //
-  // Pôr 1 cala-o desde o início; pôr um número maior do que o
-  // total de níveis faz com que nunca chegue a desaparecer.
+  // 1 = sempre mudo; acima do nº de níveis = nunca desaparece.
   silentFromLevel: 10
 };
 
 // ============================================================
 // MÚSICA
 //
-// Os números são notas MIDI e são convertidos em frequência
-// apenas na camada de áudio. As progressões contêm chaves do
-// banco de acordes; o último esquema aplica-se ao nível 5 e aos
-// níveis seguintes.
+// Notas em MIDI. A última progressão vale do nível 5 em diante.
 // ============================================================
 
 const MUSIC = {
   masterVolume: 0.3,
   scheduleAheadSeconds: 0.12,
 
-  // Quanto do sessionGain vai para a reverb partilhada com o
-  // jogador (core-audio.js). O clique do metrónomo fica de
-  // fora de propósito — é referência de tempo, não performance,
-  // e a reverb turvaria o ataque que o torna útil.
+  // Envio para a reverb partilhada (sem o metrónomo).
   reverbSend: 0.04,
 
   chordBank: {
@@ -262,71 +230,45 @@ const MUSIC = {
 // ============================================================
 // PONTUAÇÃO
 //
-// O combo multiplica os pontos, com tecto. Sem tecto o ganho
-// cresce com o QUADRADO das notas seguidas e os níveis densos
-// passam-se num compasso.
-//
-// O tecto é invisível: GAME.combo continua a contar sem limite
-// e é esse número que aparece no ecrã.
-//
-// O alvo de cada nível não é uma escada de números: é sempre o
-// mesmo número de COMPASSOS, traduzido nas notas que ESTE
-// nível põe em cada compasso (ver getLevelTargetScore).
+// O combo multiplica os pontos, com tecto (senão os níveis
+// densos passavam-se num compasso).
 // ============================================================
 
 const SCORING = {
   maxComboMultiplier: 8,
 
-  // Compassos de jogo PERFEITO para passar de nível. Na
-  // prática são sempre mais, porque cada GOOD ou OK rende
-  // menos e qualquer falha deita o combo abaixo.
+  // Compassos PERFECT para passar de nível.
   barsToClearLevel: 3
 };
 
 // ============================================================
 // VIDA / HEALTH
 //
-// A barra de health desce a cada falha e sobe a cada acerto.
-// Quando chega a zero perde-se UMA vida e a barra volta a
-// encher. Sem vidas -> game over.
-//
-// A health volta ao máximo no início de cada nível.
-// Estes valores são iguais em todos os níveis.
+// A 0 perde-se uma vida. Enche no início de cada nível.
 // ============================================================
 
 const HEALTH = {
-  // tamanho da barra
   max: 100,
-
-  // vidas iniciais
   lives: 3,
 
-  // Cura de cada acerto.
-  // OK vale 0: acertar tarde ou cedo mantém a barra,
-  // não a recupera.
+  // Cura por acerto.
   heal: {
     OK: 0,
     GOOD: 1,
     PERFECT: 2
   },
 
-  // Só se cura a partir deste combo.
-  // Abaixo disto acertar não recupera nada.
+  // Combo mínimo para curar.
   comboHealThreshold: 3
 };
 
 // ============================================================
 // FALHAS
 //
-// Cada tipo de falha define, num sítio só:
 //   label    texto do feedback
 //   timer    duração do feedback em ms
 //   damage   health perdida
-//
-// O som de cada falha vem de PLAYER_AUDIO.failures
-// (player-audio.js), indexado pela mesma chave.
-//
-// É aqui que se afina a dificuldade da barra de vida.
+// Sons em PLAYER_AUDIO.failures, pela mesma chave.
 // ============================================================
 
 const FAILURES = {
@@ -344,11 +286,7 @@ const FAILURES = {
     damage: 8,
   },
 
-  // bateu sem nota nenhuma por perto
-  //
-  // A punição que conta é o combo a zero: perde-se o
-  // multiplicador e as notas seguintes rendem uma fração.
-  // À barra de vida chega um arranhão.
+  // bateu sem nota por perto (o castigo é perder o combo)
   stray: {
     label: "MISS",
     timer: 400,
@@ -359,68 +297,42 @@ const FAILURES = {
 // ============================================================
 // VIDA PERDIDA — ZOOM
 //
-// O overlay de vida perdida entra com um golpe: sobe ao pico
-// depressa e cai de volta ao tamanho normal — a mesma forma das
-// envolventes percussivas em player-audio.js (ataque rápido,
-// queda mais lenta), só que em escala, não em volume.
-//
-// O countdown só começa a contar depois de o zoom acabar (ver
-// beginCountdown() em game-loop.js).
+// Sobe rápido ao pico e volta ao normal. O countdown espera
+// que acabe.
 // ============================================================
 
 const LIFE_LOST_ZOOM = {
-  // Tempo até ao pico do golpe.
-  attackSeconds: 0.2,
-
-  // Duração total, ataque incluído.
-  durationSeconds: 0.75,
-
-  // Tamanho no pico, em relação ao tamanho normal.
+  attackSeconds: 0.2,    // até ao pico
+  durationSeconds: 0.75, // total
   peakScale: 1.6
 };
 
 // ============================================================
 // PRÓXIMO NÍVEL — TRANSIÇÃO
 //
-// O ecrã corta para preto opaco antes de se gerar o compasso do
-// nível novo — impede que as notas do nível seguinte apareçam
-// por baixo do fade out do anterior (ver drawNextLevelOverlay()
-// em renderer.js e updateCountdown() em game-loop.js).
+// Corta para preto antes de gerar o compasso do nível novo.
 // ============================================================
 
 const NEXT_LEVEL_TRANSITION = {
-  // Tempo até o ecrã ficar preto opaco.
-  cutSeconds: 0.4,
-
-  // Duração total da transição, corte incluído.
-  durationSeconds: 1
+  cutSeconds: 0.4,     // até ficar preto
+  durationSeconds: 1   // total
 };
 
 // ============================================================
-// SCREEN WIPE — CORTE GENÉRICO ENTRE ECRÃS
+// SCREEN WIPE — CORTE ENTRE ECRÃS
 //
-// Fundo preto sem conteúdo próprio, que sobe a opaco e volta a
-// zero: esconde a troca por baixo, tanto ao sair do standby (ver
-// exitStandby() em game-state.js) como no fim do game over (ver
-// updateGameOver() em game-loop.js). Ao contrário do fade da
-// transição de nível, não tem nada para revelar aos poucos — o
-// ecrã de baixo já está pronto assim que o corte acontece.
+// Preto que sobe a opaco e volta a zero, escondendo a troca
+// (saída do standby e do game over).
 // ============================================================
 
 const SCREEN_WIPE = {
-  // ~60fps, o framerate por omissão do p5 — medido em frames,
-  // não em segundos, porque nenhuma destas transições precisa
-  // de sincronizar com o relógio de áudio.
+  // Em frames (~60fps): não precisa do relógio de áudio.
   cutFrames: 24,
   durationFrames: 48
 };
 
 // ============================================================
 // GAME OVER — SAÍDA
-//
-// Ao fim de displayFrames no ecrã de game over, o jogo volta ao
-// standby através do SCREEN_WIPE (ver updateGameOver() em
-// game-loop.js).
 // ============================================================
 
 const GAME_OVER_EXIT = {
@@ -430,13 +342,8 @@ const GAME_OVER_EXIT = {
 // ============================================================
 // QUATRO FILAS / INSTRUMENTOS
 //
-// A ordem corresponde às quatro filas físicas do MIDI Fighter,
-// e é também a ordem em que aparecem no ecrã, de cima para
-// baixo.
-//
-// Aqui fica só a COR. O som de cada fila é escolhido em
-// PLAYER_AUDIO.lanes (player-audio.js), que atribui uma voz de
-// percussão a cada uma.
+// Ordem das filas no MIDI Fighter e no ecrã (cima para baixo).
+// Sons em PLAYER_AUDIO.lanes.
 // ============================================================
 
 const LANE_ORDER = ["blue", "green", "yellow", "red"];
@@ -451,12 +358,8 @@ const LANES = {
 // ============================================================
 // CONFIGURAÇÃO MIDI
 //
-// Depois de ligares o Spectra:
-// 1. abre a consola
-// 2. carrega nos 16 botões
-// 3. o código mostra os números MIDI
-//
-// Depois colocamos aqui os 4 números de cada fila.
+// Liga o Spectra, carrega nos 16 botões e copia da consola
+// os 4 números MIDI de cada fila.
 // ============================================================
 
 const MIDI_ROW_NOTES = { blue: [], green: [], yellow: [], red: [] };
@@ -466,26 +369,8 @@ const MIDI = { access: null, input: null };
 // ============================================================
 // NÍVEIS — SEMENTES DE REGRAS
 //
-// Cada nível não é uma sequência fixa de beats: é um conjunto
-// de regras que controlam a dificuldade:
-//
-//   bpm                    velocidade
-//   beatsPerBar            tempos por compasso
-//   subdivisionsPerBeat    subdivisões dentro de cada tempo
-//   lanes                  filas permitidas neste nível
-//   density                probabilidade (0–1) de uma
-//                          célula rítmica aparecer num beat
-//   minNotesPerBar         mínimo garantido num compasso normal
-//   introMinNotesPerBar    mínimo garantido no primeiro compasso,
-//                          cujo primeiro beat fica em silêncio
-//   avoidConsecutiveRepeat evita repetir a mesma fila
-//                          duas vezes seguidas
-//   laneChangesWithinCell  quantas mudanças de fila cabem
-//                          dentro de uma célula:
-//                          "none" / "split" / "free"
-//
-// O CONTEÚDO (que fila soa em cada subdivisão) é gerado
-// aleatoriamente, de novo, a cada compasso.
+// Cada nível é um conjunto de regras (ver level-config.js);
+// as notas são geradas de novo a cada compasso.
 // ============================================================
 
 const LANE_CHANGE_MODES = ["none", "split", "free"];
@@ -495,116 +380,38 @@ function createLevelRules({
   beatsPerBar,
   subdivisionsPerBeat = 4,
 
-  // Quantas filas distintas entram em jogo neste nível
-  // (1 a 4). QUAIS filas (cor) são usadas é sorteado de
-  // novo a cada compasso — laneCount controla só a
-  // quantidade, não a identidade.
+  // Parâmetros descritos em level-config.js.
   laneCount = 1,
-
-  // Banco de células rítmicas.
-  // Cada célula é um array de subdivisões ativas dentro de UM beat.
   allowedRhythms,
-
-  // density controla a probabilidade de um beat 
-  // ter notas ou ficar em silêncio, não cada subdivisão individual.
   density,
-
   minNotesPerBar = 1,
 
-  // O compasso de introdução tem menos UM tempo disponivel.
-  // Herdar o minNotesPerBar deixava-o mais DENSO que os
-  // compassos normais, que é o contrário do que ele é para
-  // ser: um respiro para ler a partitura nova.
-  //
-  // O defeito mantém a densidade por tempo, não o total.
+  // Mantém a densidade por tempo com um tempo a menos.
   introMinNotesPerBar = Math.floor(
     minNotesPerBar * (beatsPerBar - 1) / beatsPerBar
   ),
 
   avoidConsecutiveRepeat = false,
-
-  // ----------------------------------------------------------
-  // MUDANÇAS DE FILA DENTRO DA CÉLULA
-  //
-  //   "none"   a célula inteira numa fila só
-  //   "split"  UMA mudança: a célula parte-se em dois blocos
-  //   "free"   cada nota da célula escolhe fila
-  //
-  // O degrau a sério está entre "none" e "split": continua a
-  // haver um bloco para agarrar, mas já não se pode pousar a
-  // mão e esperar. O "free" é o caos, e por isso chega tarde.
-  //
-  // Células de uma nota só não têm "dentro": os três modos
-  // dão exatamente o mesmo resultado.
-  // ----------------------------------------------------------
   laneChangesWithinCell = "none",
 
   hitWindowRules = DEFAULT_HIT_WINDOW_RULES,
 
-  // ----------------------------------------------------------
-  // VISIBILIDADE
-  //
-  // Nenhuma destas flags muda as regras do jogo: uma nota
-  // escondida continua a existir, a ser julgada e a contar
-  // como MISS. Retiram informação, não notas.
-  //
-  // A linha e o preview são controlados por ÁREA, para dar um
-  // degrau intermédio: manter o contorno do que se está a
-  // tocar e perder só a antecipação do compasso seguinte.
-  // ----------------------------------------------------------
-
-  // GRELHA DE SUBDIVISÕES
-  //
-  // Riscos finos nas posições em que as notas podem cair,
-  // dentro de cada tempo. Não revelam nada: desenham a grelha,
-  // não o que está escrito nela — por isso continuam a fazer
-  // sentido mesmo com visibleBeatsAhead ligado.
-  //
-  // Desligar deixa só os tempos: a subdivisão passa a ser
-  // sentida em vez de lida.
+  // VISIBILIDADE: tiram informação, não notas.
   showSubdivisionGrid = true,
-
-  // Linha que une os pontos no compasso ATIVO.
   showScorePath = true,
-
-  // Linha no PREVIEW. Por defeito acompanha o ativo: um nível só
-  // precisa de a mencionar para as separar.
   showPreviewPath = showScorePath,
-
-  // RASTO: quando não há linha à frente, o percurso é
-  // desenhado ATRÁS da bola, à medida que ela passa.
-  // Por defeito liga-se sozinho nos níveis sem linha, e não
-  // aparece nos que já mostram o percurso todo.
-  //
-  // Não revela nada: só desenha o que já foi tocado.
   showScoreTrail = !showScorePath,
-
-  // Em quantos tempos o rasto se apaga atrás da bola.
-  // null = fica até ao fim do compasso.
   trailFadeBeats = 4,
 
-  // Quantos tempos à frente da bola ficam visíveis.
-  // null = tudo visível, sem restrição.
-  // Atravessa a fronteira do compasso: com 2, no fim do
-  // compasso já se acendem os primeiros tempos do preview.
-  //
-  // A área do preview continua sempre desenhada — o que muda
-  // é ela poder ficar sem notas até a bola se aproximar.
-  //
-  // Só faz sentido com as linhas desligadas — caso contrário
-  // o contorno denuncia o que os pontos escondem.
+  // Só faz sentido com as linhas desligadas.
   visibleBeatsAhead = null,
 
-  // Tempos que a nota demora a aparecer, para não surgir de
-  // repente. Puramente estético.
   revealFadeBeats = 0.25
 }) {
   const rhythms =
     allowedRhythms ?? [[...Array(subdivisionsPerBeat).keys()]];
 
-  // Uma gralha no modo ("Split", "all") seria silenciosa e o
-  // nível sairia com o comportamento errado — mais vale falhar
-  // aqui, no arranque.
+  // Falha no arranque se o modo tiver uma gralha.
   if (!LANE_CHANGE_MODES.includes(laneChangesWithinCell)) {
     throw new Error(
       `Unknown laneChangesWithinCell: "${laneChangesWithinCell}". ` +

@@ -1147,7 +1147,7 @@ function drawGameOverOverlay() {
 
     // Jitter por frame, não uma animação com curva — treme desde
     // o primeiro frame em que aparece, sem precisar de arranque.
-    const shakeAmount = 4;
+    const shakeAmount = 5;
     text(
       "GAME OVER",
       width / 2 + random(-shakeAmount, shakeAmount),

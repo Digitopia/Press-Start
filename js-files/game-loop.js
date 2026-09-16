@@ -39,8 +39,7 @@ function updateGame() {
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
-  // Agenda música E metrónomo com antecedência.
-  // O metrónomo já não é disparado por deteção de frame.
+  // Agenda música E metrónomo com antecedência, os dois juntos.
   updateMusicTransport();
 
   GAME.ballPosition = constrain(elapsed / durationSeconds, 0, 1);
@@ -285,7 +284,7 @@ function registerSuccessfulHit(event, judgement) {
 // ERROS
 //
 // registerFailure centraliza o padrão comum: zera o combo,
-// mostra o feedback definido em FAILURES, toca o beep
+// mostra o feedback definido em FAILURES, toca o som da falha
 // e aplica o dano à health.
 //
 // count multiplica o dano — usado quando várias notas

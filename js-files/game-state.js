@@ -66,9 +66,9 @@ const GAME = {
   // Clock musical
   barStartAudioTime: null,
 
-  // O metrónomo é agendado pelo CLICK_TRANSPORT, por isso já
-  // não existe currentBeat. countdownBeat fica porque o
-  // renderer lê-o para desenhar o número da contagem.
+  // O metrónomo é agendado pelo CLICK_TRANSPORT. countdownBeat
+  // fica só porque o renderer lê-o para desenhar o número da
+  // contagem.
   countdownStartAudioTime: null,
   countdownBeat: null,
 
@@ -169,9 +169,10 @@ function loseLife() {
 
   // Recomeçar o compasso: descartar o que estava a meio
   // e gerar uma partitura nova para o compasso e o preview.
+  // buildCurrentLevel() já garante silêncio no primeiro tempo
+  // (ver comentário acima da função).
   GAME.eventResults.clear();
   buildCurrentLevel();
-  // fazer reset com buildCurrentLevel() pq gera o compasso ativo com allowNotesOnFirstBeat: false, ou seja, o primeiro tempo fica em silêncio.
 
   beginCountdown("lifelost");
 }

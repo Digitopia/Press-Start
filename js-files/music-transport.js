@@ -21,9 +21,8 @@ const MUSIC_TRANSPORT = {
 // ============================================================
 // METRÓNOMO
 //
-// O click deixou de ser disparado por deteção de frame. É uma
-// faixa agendada com antecedência, como qualquer outra camada,
-// e por isso arranca e pára junto com a música.
+// O click é uma faixa agendada com antecedência, como qualquer
+// outra camada, e por isso arranca e pára junto com a música.
 //
 // nextBeatTime é o instante do próximo click AINDA NÃO agendado.
 // beatIndex é absoluto: conta desde o início do transporte, o
@@ -49,9 +48,8 @@ function updateClickTransport() {
     const isDownbeat =
       CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
 
-    // Beat 1 ligeiramente mais forte. Volumes mais altos do que
-    // o original (0.08/0.045) — o click perdia-se por baixo do
-    // acompanhamento.
+    // Beat 1 ligeiramente mais forte, e ambos altos o suficiente
+    // para não se perderem por baixo do acompanhamento.
     scheduleBeep(
       isDownbeat ? 520 : 440,
       isDownbeat ? 35 : 30,

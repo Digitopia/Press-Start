@@ -42,14 +42,13 @@ const PLAYER_AUDIO = {
     lanes: {
         blue: { voice: "hihat", volume: 0.3 },
         green: { voice: "clap", volume: 0.7 },
-        // Mais baixa do que estava (0.28) — tinha ficado alta
-        // demais a par das outras filas.
+        // Mais baixa que as outras filas, para não dominar a mistura.
         yellow: { voice: "snare", volume: 0.25 },
-        // Mais alta do que estava (0.20): o kick era a fila mais
-        // fraca das quatro, e uma fundamental grave e quieta
-        // quase não distorce no saturador do bus (ver comentário
-        // em cima de getPlayerBus) — sem distorção não há os
-        // harmónicos que dão corpo em colunas pequenas.
+        // O kick é a fila mais fraca das quatro: uma fundamental
+        // grave e quieta quase não distorce no saturador do bus
+        // (ver comentário em cima de getPlayerBus) — sem
+        // distorção não há os harmónicos que dão corpo em
+        // colunas pequenas.
         red: { voice: "kick", volume: 0.35 }
     },
 
@@ -439,8 +438,8 @@ function scheduleMetallicBurst({
 // segundo: qualquer cauda a mais deixa de ser uma batida e
 // passa a ser mancha.
 //
-// Estão aqui seis vozes e só quatro filas: tom e rim ficam
-// disponíveis para trocar em PLAYER_AUDIO.lanes.
+// Uma voz por fila: kick, snare, clap e hihat, atribuídas em
+// PLAYER_AUDIO.lanes.
 // ============================================================
 
 const PERCUSSION_VOICES = {
@@ -457,29 +456,28 @@ const PERCUSSION_VOICES = {
             durationSeconds: 0.75,
             volume: volume * 0.95,
             startFrequency: 135,
-            // 46 em vez de 40: mais fundo que o original (48) mas
-            // ainda dentro do que colunas pequenas reproduzem —
-            // 40 estava tão baixo que ficava inaudível, e sem se
-            // OUVIR o grave o resto lia-se como lama, não peso.
+            // 46 Hz: fundo o suficiente para dar peso, mas ainda
+            // dentro do que colunas pequenas reproduzem — sem se
+            // OUVIR o grave, o resto lê-se como lama, não peso.
             endFrequency: 46,
-            // De volta a uma queda rápida: esticar isto tirava
-            // definição sem dar peso a mais — o peso vem do
+            // Queda rápida de propósito: esticar isto tira
+            // definição sem dar mais peso — o peso vem do
             // patamar de sustain, não daqui.
             pitchDecaySeconds: 0.05,
             oscillator: "triangle",
             attackSeconds: 0.002,
             holdSeconds: 0.012,
-            // O corpo do bombo: cai para 42% e FICA ali 80ms —
-            // mais comprido do que antes, é o patamar que se sente
-            // como o bombo a "durar", não a rampa final.
+            // O corpo do bombo: cai para 42% e FICA ali 80ms — é
+            // o patamar que se sente como o bombo a "durar", não
+            // a rampa final.
             sustainLevel: 0.42,
             sustainDecaySeconds: 0.012,
             sustainHoldSeconds: 0.08
         });
 
-        // O click de volta perto do original: sem ele o bombo
-        // perde o contraste entre grave e ataque e soa fino,
-        // mesmo com a fundamental mais forte.
+        // O click do ataque: sem ele o bombo perde o contraste
+        // entre grave e ataque e soa fino, mesmo com a
+        // fundamental mais forte.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.32,
@@ -492,9 +490,9 @@ const PERCUSSION_VOICES = {
         });
 
         // O click do baterista: alto e curtíssimo (18ms), não um
-        // "mid" arredondado. Tinha os MESMOS parâmetros do ruído
-        // da tarola — os dois liam-se como a mesma batida
-        // repetida, e era isso que soava a fake.
+        // "mid" arredondado, e com parâmetros distintos do ruído
+        // da tarola — se fossem iguais, as duas ler-se-iam como
+        // a mesma batida repetida.
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.018,
@@ -538,9 +536,8 @@ const PERCUSSION_VOICES = {
             oscillator: "sine",
             attackSeconds: 0.001,
             holdSeconds: 0.006,
-            // Patamar um pouco mais alto e mais comprido do que
-            // antes — o mesmo truque do kick para dar corpo à
-            // fundamental, sem esticar a tarola toda.
+            // Patamar curto: o mesmo truque do kick para dar
+            // corpo à fundamental, sem esticar a tarola toda.
             sustainLevel: 0.42,
             sustainDecaySeconds: 0.008,
             sustainHoldSeconds: 0.03
@@ -680,10 +677,9 @@ const FEEDBACK_VOICES = {
             attackSeconds: 0.004
         });
 
-        // Square em vez de triangle nesta segunda camada: só uma
-        // das duas, não as duas como na tentativa anterior — dá
-        // uma aresta extra ao batimento sem voltar a soar a
-        // instrumento de percussão.
+        // Square em vez de triangle nesta segunda camada, só
+        // numa das duas: dá uma aresta extra ao batimento sem
+        // soar a instrumento de percussão.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.18,
@@ -710,9 +706,9 @@ const FEEDBACK_VOICES = {
 
     // Bateu sem nota nenhuma por perto. É de propósito o som
     // mais pequeno do ficheiro: a punição a sério é o combo a
-    // zero, não o barulho. Mais grave e discreto do que a versão
-    // aguda anterior (900Hz) — aquele registo confundia-se com o
-    // clap; este fica por baixo, sem se misturar.
+    // zero, não o barulho. Grave e discreto: um registo agudo
+    // confundir-se-ia com o clap; este fica por baixo, sem se
+    // misturar.
     tick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
@@ -819,9 +815,9 @@ const FEEDBACK_VOICES = {
             holdSeconds: 0.12
         });
 
-        // A cauda mais comprida (0.55 → 0.80s de patamar) é o que
-        // faz o fim de jogo demorar de facto mais a apagar-se —
-        // os triângulos já mal se ouvem a esta altura.
+        // A cauda comprida (0.80s de patamar) é o que faz o fim
+        // de jogo demorar de facto mais a apagar-se — os
+        // triângulos já mal se ouvem a esta altura.
         schedulePercussiveTone({
             startTime,
             durationSeconds: 3.40,

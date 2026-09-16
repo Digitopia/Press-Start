@@ -249,7 +249,9 @@ const HEALTH = {
 //   label    texto do feedback
 //   timer    duração do feedback em ms
 //   damage   health perdida
-//   beep     som opcional [freq, ms, volume]
+//
+// O som de cada falha vem de PLAYER_AUDIO.failures
+// (player-audio.js), indexado pela mesma chave.
 //
 // É aqui que se afina a dificuldade da barra de vida.
 // ============================================================
@@ -311,10 +313,10 @@ const MIDI_ROW_NOTES = { blue: [], green: [], yellow: [], red: [] };
 const MIDI = { access: null, input: null };
 
 // ============================================================
-// NÍVEIS — AGORA SÃO "SEMENTES DE REGRAS"
+// NÍVEIS — SEMENTES DE REGRAS
 //
-// Cada nível já não tem um "beats" fixo. Em vez disso define
-// as regras que controlam a dificuldade:
+// Cada nível não é uma sequência fixa de beats: é um conjunto
+// de regras que controlam a dificuldade:
 //
 //   bpm                    velocidade
 //   beatsPerBar            tempos por compasso
@@ -431,7 +433,7 @@ function createLevelRules({
   trailFadeBeats = 4,
 
   // Quantos tempos à frente da bola ficam visíveis.
-  // null = tudo visível (comportamento original).
+  // null = tudo visível, sem restrição.
   // Atravessa a fronteira do compasso: com 2, no fim do
   // compasso já se acendem os primeiros tempos do preview.
   //

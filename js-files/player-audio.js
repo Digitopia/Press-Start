@@ -35,10 +35,10 @@ const PLAYER_AUDIO = {
     // A ordem segue LANE_ORDER: do agudo (blue) ao grave (red),
     // tal como as frequências dos beeps antigos.
     lanes: {
-        blue: { voice: "hihat", volume: 0.85 },
-        green: { voice: "clap", volume: 0.75 },
-        yellow: { voice: "snare", volume: 0.80 },
-        red: { voice: "kick", volume: 1.00 }
+        blue: { voice: "hihat", volume: 1.0 },
+        green: { voice: "clap", volume: 1.0 },
+        yellow: { voice: "snare", volume: 0.7 },
+        red: { voice: "kick", volume: 0.60 }
     },
 
     // As chaves são as de FAILURES (main-config.js).
@@ -52,7 +52,7 @@ const PLAYER_AUDIO = {
     },
 
     // Estas duas são as únicas vozes longas do ficheiro. Ficam
-    // acima do resto na mistura de propósito: são raras, e cada
+    // acima do resto na mistura de propósito: são raras, e cada233444
     // uma marca o fim de alguma coisa.
     lifeLost: { voice: "fall", volume: 0.85 },
     gameOver: { voice: "collapse", volume: 1.00 }
@@ -68,7 +68,37 @@ const PLAYER_AUDIO = {
 // Vai direto ao destination e NÃO ao sessionGain da música.
 // ============================================================
 
-const PLAYER_BUS = { gain: null };
+const PLAYER_BUS = { gain: null, saturator: null };
+
+// ============================================================
+// SATURAÇÃO DO BUS
+//
+// O kick cai até 48 Hz numa sinusoide pura — sem harmónicos.
+// Em colunas pequenas essa fundamental não se reproduz, e o
+// bombo desaparece; sobra só o click do transiente. O baixo do
+// transport, em contraste, é um "triangle" nas mesmas
+// frequências e por isso SOA nas mesmas colunas.
+//
+// A curva de tanh distorce todo o sinal do bus e gera
+// harmónicos da fundamental (96, 144, 192 Hz...). O ouvido
+// reconstrói o grave a partir deles, sem que a síntese em si
+// mude uma única frequência. É também o primeiro ponto onde
+// todas as vozes passam pela mesma não-linearidade — o que
+// começa a colá-las entre si.
+// ============================================================
+
+function createSaturationCurve(amount = 3) {
+    const sampleCount = 2048;
+    const curve = new Float32Array(sampleCount);
+    const normalizer = Math.tanh(amount);
+
+    for (let index = 0; index < sampleCount; index++) {
+        const x = (index / (sampleCount - 1)) * 2 - 1;
+        curve[index] = Math.tanh(amount * x) / normalizer;
+    }
+
+    return curve;
+}
 
 function getPlayerBus() {
     if (!audioCtx) return null;
@@ -76,7 +106,13 @@ function getPlayerBus() {
     if (!PLAYER_BUS.gain) {
         PLAYER_BUS.gain = audioCtx.createGain();
         PLAYER_BUS.gain.gain.value = PLAYER_AUDIO.masterVolume;
-        PLAYER_BUS.gain.connect(audioCtx.destination);
+
+        PLAYER_BUS.saturator = audioCtx.createWaveShaper();
+        PLAYER_BUS.saturator.curve = createSaturationCurve();
+        PLAYER_BUS.saturator.oversample = "4x";
+
+        PLAYER_BUS.gain.connect(PLAYER_BUS.saturator);
+        PLAYER_BUS.saturator.connect(audioCtx.destination);
     }
 
     return PLAYER_BUS.gain;
@@ -91,6 +127,14 @@ function getPlayerBus() {
 // O hold é o que separa uma batida de um BAM. Sem ele o som
 // começa a cair no instante em que chega ao topo, e por mais
 // que se estique a cauda nunca ganha corpo.
+//
+// sustainLevel/sustainDecaySeconds são opcionais e partem a
+// queda em dois andares: primeiro uma queda RÁPIDA do pico até
+// sustainLevel (o transiente a esvaziar-se), só depois a cauda
+// longa e lenta até 0.0001 em endTime (o corpo a apagar-se). Sem
+// isto a queda é uma reta só, e os primeiros 40-90ms — que são
+// o corpo, não o transiente — já vão a descer a pique. Por
+// omissão sustainLevel é 0 e o comportamento é o de antes.
 // ============================================================
 
 function applyPercussiveEnvelope(gain, {
@@ -98,17 +142,25 @@ function applyPercussiveEnvelope(gain, {
     durationSeconds,
     volume,
     attackSeconds,
-    holdSeconds = 0
+    holdSeconds = 0,
+    sustainLevel = 0,
+    sustainDecaySeconds = 0
 }) {
     const endTime = startTime + durationSeconds;
     const attackEnd = Math.min(endTime, startTime + attackSeconds);
     const holdEnd = Math.min(endTime, attackEnd + holdSeconds);
+    const bodyLevel = volume * sustainLevel;
+    const bodyEnd = Math.min(endTime, holdEnd + sustainDecaySeconds);
 
     gain.gain.setValueAtTime(0.0001, startTime);
     gain.gain.linearRampToValueAtTime(volume, attackEnd);
 
     if (holdEnd > attackEnd) {
         gain.gain.setValueAtTime(volume, holdEnd);
+    }
+
+    if (bodyLevel > 0 && bodyEnd > holdEnd) {
+        gain.gain.exponentialRampToValueAtTime(bodyLevel, bodyEnd);
     }
 
     gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
@@ -225,7 +277,9 @@ function schedulePercussiveTone({
     pitchDecaySeconds = 0.04,
     oscillator = "sine",
     attackSeconds = 0.002,
-    holdSeconds = 0
+    holdSeconds = 0,
+    sustainLevel = 0,
+    sustainDecaySeconds = 0
 }) {
     const bus = getPlayerBus();
 
@@ -251,7 +305,9 @@ function schedulePercussiveTone({
         durationSeconds,
         volume,
         attackSeconds,
-        holdSeconds
+        holdSeconds,
+        sustainLevel,
+        sustainDecaySeconds
     });
 
     osc.connect(gain);
@@ -378,18 +434,33 @@ const PERCUSSION_VOICES = {
             pitchDecaySeconds: 0.045,
             oscillator: "sine",
             attackSeconds: 0.002,
-            holdSeconds: 0.012
+            holdSeconds: 0.012,
+            // O corpo do bombo. Sem isto, a partir dos 14ms já ia
+            // tudo a direito para 0.0001 — os 40-90ms que dão peso
+            // à batida caíam a pique junto com o resto da cauda.
+            sustainLevel: 0.45,
+            sustainDecaySeconds: 0.028
         });
 
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.012,
+            durationSeconds: 0.22,
             volume: volume * 0.16,
             startFrequency: 1100,
             endFrequency: 600,
             pitchDecaySeconds: 0.008,
             oscillator: "sine",
             attackSeconds: 0.0005
+        });
+
+        scheduleNoiseBurst({
+            startTime,
+            durationSeconds: 0.13,
+            volume: volume * 0.38,
+            filterType: "bandpass",
+            frequency: 2100,
+            q: 1.4,
+            attackSeconds: 0.0006
         });
     },
 
@@ -407,7 +478,11 @@ const PERCUSSION_VOICES = {
             pitchDecaySeconds: 0.05,
             oscillator: "sine",
             attackSeconds: 0.001,
-            holdSeconds: 0.006
+            holdSeconds: 0.006,
+            // O mesmo corpo do kick, encolhido para os 110ms da
+            // tarola.
+            sustainLevel: 0.4,
+            sustainDecaySeconds: 0.015
         });
 
         schedulePercussiveTone({

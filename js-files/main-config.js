@@ -284,6 +284,29 @@ const FAILURES = {
 };
 
 // ============================================================
+// VIDA PERDIDA — ZOOM
+//
+// O overlay de vida perdida entra com um golpe: sobe ao pico
+// depressa e cai de volta ao tamanho normal — a mesma forma das
+// envolventes percussivas em player-audio.js (ataque rápido,
+// queda mais lenta), só que em escala, não em volume.
+//
+// O countdown só começa a contar depois de o zoom acabar (ver
+// beginCountdown() em game-loop.js).
+// ============================================================
+
+const LIFE_LOST_ZOOM = {
+  // Tempo até ao pico do golpe.
+  attackSeconds: 0.2,
+
+  // Duração total, ataque incluído.
+  durationSeconds: 0.75,
+
+  // Tamanho no pico, em relação ao tamanho normal.
+  peakScale: 1.6
+};
+
+// ============================================================
 // QUATRO FILAS / INSTRUMENTOS
 // A ordem corresponde às quatro filas físicas do MIDI Fighter
 // ============================================================

@@ -57,8 +57,9 @@ const GAME = {
   lives: 3,
   maxLives: 3,
 
-  // Frame em que a última vida foi perdida (flash da barra).
-  lifeLostFrame: null,
+  // Instante (audioCtx.currentTime) em que a última vida foi
+  // perdida — origem do zoom do overlay em drawLiveLostOverlay().
+  lifeLostAudioTime: null,
 
   lastJudgement: "",
   judgementTimer: 0,
@@ -141,7 +142,7 @@ function loseLife() {
   stopMusicTransport();
 
   GAME.lives--;
-  GAME.lifeLostFrame = frameCount;
+  GAME.lifeLostAudioTime = audioCtx.currentTime;
   GAME.combo = 0;
   GAME.levelScore = 0;
 
@@ -174,13 +175,15 @@ function loseLife() {
   GAME.eventResults.clear();
   buildCurrentLevel();
 
-  beginCountdown("lifelost");
+  // O countdown só arranca depois de o zoom do overlay acabar
+  // (ver LIFE_LOST_ZOOM em main-config.js e beginCountdown()).
+  beginCountdown("lifelost", LIFE_LOST_ZOOM.durationSeconds);
 }
 
 // Usada no início de cada nível.
 function resetHealth() {
   GAME.health = HEALTH.max;
-  GAME.lifeLostFrame = null;
+  GAME.lifeLostAudioTime = null;
 }
 
 // ============================================================
@@ -261,7 +264,7 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.maxLives = HEALTH.lives;
   GAME.lives = HEALTH.lives;
   GAME.health = HEALTH.max;
-  GAME.lifeLostFrame = null;
+  GAME.lifeLostAudioTime = null;
 
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;

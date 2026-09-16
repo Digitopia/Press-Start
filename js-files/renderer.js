@@ -1031,20 +1031,30 @@ function drawNextLevelOverlay() {
 
 // ============================================================
 // LIFE LOST – OVERLAY
+//
+// O overlay inteiro entra com um golpe de zoom (ver
+// getLifeLostZoomScale()). O número só aparece quando o zoom
+// termina: countdownBeat fica a null até lá (beginCountdown()
+// atrasa o countdown para isso), e mostra-se o total de tempos
+// como valor de repouso.
 // ============================================================
 
 
 function drawLiveLostOverlay() {
-  if (GAME.state !== "lifelost" || GAME.countdownBeat === null) {
-    return;
-  }
+  if (GAME.state !== "lifelost") return;
 
   const config = getCurrentLevelConfig();
 
   const number =
-    config.beatsPerBar - GAME.countdownBeat;
+    config.beatsPerBar - (GAME.countdownBeat ?? 0);
+
+  const zoomScale = getLifeLostZoomScale();
 
   push();
+
+  translate(width / 2, height / 2);
+  scale(zoomScale);
+  translate(-width / 2, -height / 2);
 
   // Fundo semi-transparente
   noStroke();
@@ -1088,6 +1098,24 @@ function drawLiveLostOverlay() {
   text(`LEVEL PROGRESS LOST   ·   LIVES x${GAME.lives}`, width / 2, hudY);
 
   pop();
+}
+
+// Ataque linear até ao pico, depois queda em raiz quadrada —
+// rápida no início, a assentar devagar no tamanho normal.
+function getLifeLostZoomScale() {
+  const elapsed = audioCtx.currentTime - GAME.lifeLostAudioTime;
+  const { attackSeconds, durationSeconds, peakScale } = LIFE_LOST_ZOOM;
+
+  if (elapsed >= durationSeconds) return 1;
+
+  if (elapsed < attackSeconds) {
+    return 1 + (peakScale - 1) * (elapsed / attackSeconds);
+  }
+
+  const decayProgress =
+    (elapsed - attackSeconds) / (durationSeconds - attackSeconds);
+
+  return peakScale - (peakScale - 1) * Math.sqrt(decayProgress);
 }
 
 

@@ -315,11 +315,14 @@ function registerFailure(type, count = 1) {
 // (GAME.countdownBeat é lido pelo renderer).
 // ============================================================
 
-function beginCountdown(state) {
+// extraDelaySeconds adia o arranque do countdown — usado pelo
+// "lifelost" para o countdown só começar depois de o zoom do
+// overlay acabar (ver LIFE_LOST_ZOOM em main-config.js).
+function beginCountdown(state, extraDelaySeconds = 0) {
   GAME.state = state;
 
   GAME.countdownStartAudioTime =
-    audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS;
+    audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS + extraDelaySeconds;
 
   GAME.countdownBeat = null;
 
@@ -364,7 +367,12 @@ function updateCountdown() {
 
   // Novo beat do countdown — só para o ecrã.
   // O click já foi agendado em scheduleCountdownClicks().
+  //
+  // beatIndex >= 0 exclui o atraso extra (extraDelaySeconds):
+  // enquanto ele decorre, elapsed é negativo e não deve mexer
+  // no número mostrado.
   if (
+    beatIndex >= 0 &&
     beatIndex !== GAME.countdownBeat &&
     beatIndex < config.beatsPerBar
   ) {

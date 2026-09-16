@@ -106,12 +106,7 @@ const LEVEL_CONFIGS = [
       [2]
     ],
     density: 0.4,
-    minNotesPerBar: 4,
-
-    // TO TEST VISIBILITY RULES
-    // showPreviewPath: false,
-    // showScorePath: false,
-    // visibleBeatsAhead: 1
+    minNotesPerBar: 4
   }),
 
   // ==========================================================

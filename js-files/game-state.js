@@ -49,9 +49,9 @@ const GAME = {
   // Chegando a 0 perde-se uma vida e a barra volta a encher.
   // Sem vidas -> gameover.
   //
-  // Estes valores são substituídos por resetGame() a partir
-  // das healthRules do nível — aqui ficam só valores seguros
-  // para antes do primeiro reset.
+  // Estes valores são substituídos por resetGame() a partir de
+  // HEALTH (main-config.js), que é igual em todos os níveis —
+  // aqui ficam só valores seguros para antes do primeiro reset.
   // ----------------------------------------------------------
   health: 100,
   lives: 3,

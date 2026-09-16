@@ -401,16 +401,23 @@ const GAME_OVER_EXIT = {
 
 // ============================================================
 // QUATRO FILAS / INSTRUMENTOS
-// A ordem corresponde às quatro filas físicas do MIDI Fighter
+//
+// A ordem corresponde às quatro filas físicas do MIDI Fighter,
+// e é também a ordem em que aparecem no ecrã, de cima para
+// baixo.
+//
+// Aqui fica só a COR. O som de cada fila é escolhido em
+// PLAYER_AUDIO.lanes (player-audio.js), que atribui uma voz de
+// percussão a cada uma.
 // ============================================================
 
 const LANE_ORDER = ["blue", "green", "yellow", "red"];
 
 const LANES = {
-  blue: { color: [24, 207, 255], frequency: 1200 },
-  green: { color: [0, 255, 120], frequency: 850 },
-  yellow: { color: [255, 220, 40], frequency: 550 },
-  red: { color: [217, 44, 255], frequency: 220 }
+  blue: { color: [24, 207, 255] },
+  green: { color: [0, 255, 120] },
+  yellow: { color: [255, 220, 40] },
+  red: { color: [217, 44, 255] }
 };
 
 // ============================================================
@@ -532,8 +539,8 @@ function createLevelRules({
   // Linha que une os pontos no compasso ATIVO.
   showScorePath = true,
 
-  // Linha no PREVIEW. Por defeito acompanha o ativo, por isso
-  // os níveis que não a mencionam comportam-se como antes.
+  // Linha no PREVIEW. Por defeito acompanha o ativo: um nível só
+  // precisa de a mencionar para as separar.
   showPreviewPath = showScorePath,
 
   // RASTO: quando não há linha à frente, o percurso é

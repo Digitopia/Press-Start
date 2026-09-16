@@ -21,9 +21,9 @@
 // ============================================================
 
 const PLAYER_AUDIO = {
-    // Ganho do bus inteiro. O acompanhamento tem
-    // MUSIC.masterVolume a 0.18 por baixo — é aqui que se afina
-    // a relação entre o gesto e a música.
+    // Ganho do bus inteiro. O acompanhamento tem o seu próprio
+    // em MUSIC.masterVolume (main-config.js) — é a relação entre
+    // os dois que decide o peso do gesto contra a música.
     masterVolume: 0.25,
 
     // Quanto deste bus vai para a reverb partilhada com a
@@ -37,8 +37,8 @@ const PLAYER_AUDIO = {
         OK: 0.6
     },
 
-    // A ordem segue LANE_ORDER: do agudo (blue) ao grave (red),
-    // tal como as frequências dos beeps antigos.
+    // A ordem segue LANE_ORDER, do agudo (blue) ao grave (red):
+    // a fila mais acima no ecrã é também a mais aguda.
     lanes: {
         blue: { voice: "hihat", volume: 0.3 },
         green: { voice: "clap", volume: 0.7 },
@@ -149,8 +149,8 @@ function getPlayerBus() {
 // exponencial até 0.0001 em endTime. É o patamar plano que dá
 // corpo — duas rampas exponenciais em série, sem hold no meio,
 // não bastam: a diferença entre as taxas é pequena de mais para
-// se ouvir. Por omissão sustainLevel é 0 e o comportamento é o
-// de antes.
+// se ouvir. Com sustainLevel a 0 (a omissão) não há degrau
+// nenhum: sobe, segura, cai.
 // ============================================================
 
 function applyPercussiveEnvelope(gain, {
@@ -359,8 +359,8 @@ function schedulePercussiveTone({
 // como as parciais não são múltiplos inteiros, o ouvido não
 // lhes encontra fundamental e ouve metal em vez de nota.
 //
-// Substitui o ruído nas vozes agudas. Ruído filtrado dá um
-// "chh"; isto dá um ataque com contorno.
+// É o que as vozes agudas usam em vez de ruído filtrado: ruído
+// dá um "chh" sem forma, isto dá um ataque com contorno.
 // ============================================================
 
 const METALLIC_RATIOS = [1, 1.47, 1.79, 2.41, 2.93, 3.41];
@@ -566,9 +566,9 @@ const PERCUSSION_VOICES = {
         });
     },
 
-    // Duas reflexões em vez de três, e mais juntas. A palma é
-    // o atraso entre elas, não a quantidade — três eram uma a
-    // mais e liam-se como cauda em vez de gesto.
+    // Duas reflexões juntas, e não mais: o que faz a palma é o
+    // atraso entre elas, não a quantidade. À terceira o ouvido
+    // deixa de ler um gesto e passa a ler cauda.
     clap(startTime, volume) {
         const reflections = [
             { offset: 0, volume: 0.9 },

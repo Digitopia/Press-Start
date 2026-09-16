@@ -64,7 +64,7 @@ const PLAYER_AUDIO = {
     },
 
     // Estas duas são as únicas vozes longas do ficheiro. Ficam
-    // acima do resto na mistura de propósito: são raras, e cada233444
+    // acima do resto na mistura de propósito: são raras, e cada
     // uma marca o fim de alguma coisa.
     lifeLost: { voice: "fall", volume: 0.85 },
     gameOver: { voice: "collapse", volume: 1.00 }
@@ -649,49 +649,80 @@ const FEEDBACK_VOICES = {
 
     // Tempo certo, fila errada.
     //
-    // Dois triângulos desafinados 6 Hz um do outro: o batimento
-    // entre eles dá a sensação de coisa torta sem recorrer a
-    // ruído nem a distorção. O erro ouve-se como desafinação,
-    // que é exatamente o que ele é.
+    // Mini versão da anatomia do fall() (golpe, corpo, cauda),
+    // encolhida a ~0.2s — os erros são curtos de propósito, não
+    // podem tapar a nota seguinte. O corpo continua a ser dois
+    // triângulos dessintonizados: o batimento entre eles dá a
+    // sensação de coisa torta sem recorrer a ruído nem distorção.
+    // Sem hold e bem mais baixo do que as vozes de acerto — não é
+    // suposto soar a instrumento, é suposto soar a coisa pequena e
+    // errada.
     thud(startTime, volume) {
-        schedulePercussiveTone({
+        // O golpe, como no fall() — mas curtíssimo.
+        scheduleNoiseBurst({
             startTime,
-            durationSeconds: 0.16,
-            volume: volume * 0.45,
-            startFrequency: 146,
-            endFrequency: 104,
-            pitchDecaySeconds: 0.09,
-            oscillator: "triangle",
-            attackSeconds: 0.003,
-            holdSeconds: 0.02
+            durationSeconds: 0.025,
+            volume: volume * 0.20,
+            filterType: "lowpass",
+            frequency: 300,
+            q: 0.7,
+            attackSeconds: 0.001
         });
 
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.16,
-            volume: volume * 0.30,
-            startFrequency: 152,
-            endFrequency: 110,
-            pitchDecaySeconds: 0.09,
+            durationSeconds: 0.18,
+            volume: volume * 0.26,
+            startFrequency: 183,
+            endFrequency: 120,
+            pitchDecaySeconds: 0.10,
             oscillator: "triangle",
-            attackSeconds: 0.003,
+            attackSeconds: 0.004
+        });
+
+        // Square em vez de triangle nesta segunda camada: só uma
+        // das duas, não as duas como na tentativa anterior — dá
+        // uma aresta extra ao batimento sem voltar a soar a
+        // instrumento de percussão.
+        schedulePercussiveTone({
+            startTime,
+            durationSeconds: 0.18,
+            volume: volume * 0.15,
+            startFrequency: 180,
+            endFrequency: 126,
+            pitchDecaySeconds: 0.10,
+            oscillator: "square",
+            attackSeconds: 0.004
+        });
+
+        // A cauda grave, como no fall() — mais aguda que o chão
+        // do kick (50Hz) para não voltar a confundir-se com ele.
+        schedulePercussiveTone({
+            startTime,
+            durationSeconds: 0.20,
+            volume: volume * 0.14,
+            startFrequency: 85,
+            oscillator: "sine",
+            attackSeconds: 0.01,
             holdSeconds: 0.02
         });
     },
 
     // Bateu sem nota nenhuma por perto. É de propósito o som
     // mais pequeno do ficheiro: a punição a sério é o combo a
-    // zero, não o barulho.
+    // zero, não o barulho. Mais agudo e mais curto do que antes —
+    // a 210 Hz confundia-se com um "boop" surdo; assim lê-se
+    // mesmo como um tick, mesmo a este volume baixo.
     tick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.045,
-            volume: volume * 0.40,
-            startFrequency: 210,
-            endFrequency: 170,
-            pitchDecaySeconds: 0.018,
+            durationSeconds: 0.03,
+            volume: volume * 0.42,
+            startFrequency: 900,
+            endFrequency: 650,
+            pitchDecaySeconds: 0.012,
             oscillator: "sine",
-            attackSeconds: 0.002
+            attackSeconds: 0.001
         });
     },
 
@@ -742,10 +773,10 @@ const FEEDBACK_VOICES = {
     },
 
     // ==========================================================
-    // SEM VIDAS — 2.6 s
+    // SEM VIDAS — 3.4 s
     //
-    // A mesma anatomia, mas o dobro do tempo e mais abaixo: o
-    // corpo vai buscar os 30 Hz, que já não é altura, é pressão.
+    // A mesma anatomia do fall, mas bem mais tempo e mais abaixo:
+    // o corpo vai buscar os 30 Hz, que já não é altura, é pressão.
     //
     // Os dois triângulos desafinados 4 Hz batem um contra o
     // outro ao longo da queda toda — é o que impede a cauda de
@@ -756,7 +787,7 @@ const FEEDBACK_VOICES = {
         scheduleNoiseBurst({
             startTime,
             durationSeconds: 0.10,
-            volume: volume * 0.34,
+            volume: volume * 0.39,
             filterType: "lowpass",
             frequency: 1100,
             q: 0.7,
@@ -766,36 +797,39 @@ const FEEDBACK_VOICES = {
 
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 2.60,
-            volume: volume * 0.50,
+            durationSeconds: 3.40,
+            volume: volume * 0.58,
             startFrequency: 190,
             endFrequency: 31,
-            pitchDecaySeconds: 1.10,
+            pitchDecaySeconds: 1.40,
             oscillator: "triangle",
             attackSeconds: 0.006,
-            holdSeconds: 0.09
+            holdSeconds: 0.12
         });
 
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 2.60,
-            volume: volume * 0.34,
+            durationSeconds: 3.40,
+            volume: volume * 0.39,
             startFrequency: 186,
             endFrequency: 29,
-            pitchDecaySeconds: 1.10,
+            pitchDecaySeconds: 1.40,
             oscillator: "triangle",
             attackSeconds: 0.006,
-            holdSeconds: 0.09
+            holdSeconds: 0.12
         });
 
+        // A cauda mais comprida (0.55 → 0.80s de patamar) é o que
+        // faz o fim de jogo demorar de facto mais a apagar-se —
+        // os triângulos já mal se ouvem a esta altura.
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 2.60,
-            volume: volume * 0.30,
+            durationSeconds: 3.40,
+            volume: volume * 0.35,
             startFrequency: 44,
             oscillator: "sine",
             attackSeconds: 0.03,
-            holdSeconds: 0.55
+            holdSeconds: 0.80
         });
     }
 };

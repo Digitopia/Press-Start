@@ -30,16 +30,25 @@ function draw() {
 
   updateGame();
 
-  drawHeader();
+  if (GAME.state === "standby") {
+    drawStandbyOverlay();
+  } else {
+    drawHeader();
 
-  drawGameArea();
+    drawGameArea();
 
-  drawJudgement();
-  drawFooter();
+    drawJudgement();
+    drawFooter();
 
-  drawCountdownOverlay();
-  drawNextLevelOverlay();
-  drawLiveLostOverlay();
-  drawGameOverOverlay();
+    drawCountdownOverlay();
+    drawNextLevelOverlay();
+    drawLiveLostOverlay();
+    drawGameOverOverlay();
+  }
 
+  // Independentes do ramo acima: continuam a desenhar-se por
+  // cima mesmo depois de o estado já ter mudado (ver
+  // drawScreenWipe() em renderer.js).
+  drawStandbyExitOverlay();
+  drawGameOverExitOverlay();
 }

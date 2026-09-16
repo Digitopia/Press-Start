@@ -6,6 +6,16 @@ function updateGame() {
 
   if (!audioCtx) return;
 
+  if (GAME.state === "standby") {
+    updateStandby();
+    return;
+  }
+
+  if (GAME.state === "gameover") {
+    updateGameOver();
+    return;
+  }
+
   if (GAME.state === "countdown" || GAME.state === "nextlevel" || GAME.state === "lifelost") {
     updateCountdown();
     return;
@@ -315,6 +325,50 @@ function registerFailure(type, count = 1) {
 }
 
 // ============================================================
+// STANDBY
+//
+// exitStandby() (game-state.js) já marcou standbyExitStartFrame
+// no momento do botão. Esta função só espera o corte do screen
+// wipe (SCREEN_WIPE em main-config.js) para então arrancar o
+// countdown a sério — sem atraso extra, porque o wipe já é a
+// espera.
+// ============================================================
+
+function updateStandby() {
+  if (GAME.standbyExitStartFrame === null) return;
+
+  const elapsedFrames = frameCount - GAME.standbyExitStartFrame;
+
+  if (elapsedFrames >= SCREEN_WIPE.cutFrames) {
+    beginCountdown("countdown");
+  }
+}
+
+// ============================================================
+// GAME OVER — SAÍDA
+//
+// Ao fim de GAME_OVER_EXIT.displayFrames, começa o screen wipe;
+// no corte, o jogo reseta-se por completo e volta ao standby —
+// tudo isto escondido atrás do preto opaco.
+// ============================================================
+
+function updateGameOver() {
+  if (frameCount - GAME.gameOverStartFrame < GAME_OVER_EXIT.displayFrames) {
+    return;
+  }
+
+  if (!GAME.gameOverExitPending) {
+    GAME.gameOverExitPending = true;
+    GAME.gameOverExitStartFrame = frameCount;
+    return;
+  }
+
+  if (frameCount - GAME.gameOverExitStartFrame >= SCREEN_WIPE.cutFrames) {
+    resetGame();
+  }
+}
+
+// ============================================================
 // COUNTDOWN
 //
 // O ÁUDIO da contagem é agendado todo de uma vez, no arranque.
@@ -353,12 +407,6 @@ function scheduleCountdownClicks() {
       GAME.countdownStartAudioTime + beat * beatDurationSeconds
     );
   }
-}
-
-function startCountdown() {
-  ensureAudioContext();
-
-  beginCountdown("countdown");
 }
 
 function updateCountdown() {

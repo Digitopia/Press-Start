@@ -3,7 +3,7 @@
 // ============================================================
 
 const GAME = {
-  state: "ready",
+  state: "standby",
   level: 1,
 
   ballPosition: 0,
@@ -88,7 +88,24 @@ const GAME = {
 
   // Frame (frameCount) em que o "gameover" começou,
   // usado só para controlar o piscar do overlay.
-  gameOverStartFrame: null
+  gameOverStartFrame: null,
+
+  // Frame em que se começou a sair do standby (screen wipe) —
+  // null enquanto ainda se espera por um botão (ver
+  // exitStandby() e updateStandby() em game-loop.js).
+  standbyExitStartFrame: null,
+
+  // O mesmo para a saída do game over: frame em que o screen
+  // wipe começou. NÃO se repõe a null no reset a meio da
+  // transição (ver resetGame()) — o wipe continua a desenhar-se
+  // por cima do standby novo até acabar (ver
+  // drawGameOverExitOverlay() em renderer.js).
+  gameOverExitStartFrame: null,
+
+  // Verdadeiro só enquanto se espera pelo corte do wipe do game
+  // over — impede updateGameOver() de chamar resetGame() mais
+  // do que uma vez por ciclo.
+  gameOverExitPending: false
 };
 
 
@@ -291,7 +308,7 @@ function resetGame({ keepLevel = false } = {}) {
     GAME.level = 1;
   }
 
-  GAME.state = "ready";
+  GAME.state = "standby";
   GAME.ballPosition = 0;
 
   GAME.score = 0;
@@ -321,8 +338,34 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.eventResults.clear();
 
   GAME.gameOverStartFrame = null;
+  GAME.standbyExitStartFrame = null;
+  GAME.gameOverExitPending = false;
+
+  // gameOverExitStartFrame fica de fora de propósito: este reset
+  // corre a meio da saída do game over (ver updateGameOver()), e
+  // o screen wipe ainda precisa dele para acabar de se desenhar
+  // por cima do standby novo.
 
   buildCurrentLevel();
+}
+
+// ============================================================
+// SAIR DO STANDBY
+//
+// Qualquer tecla ou nota MIDI chama isto enquanto GAME.state é
+// "standby" (ver input.js). O corte do screen wipe é que decide
+// quando o countdown a sério começa — ver updateStandby() em
+// game-loop.js.
+// ============================================================
+
+function exitStandby() {
+  if (GAME.state !== "standby" || GAME.standbyExitStartFrame !== null) {
+    return;
+  }
+
+  ensureAudioContext();
+
+  GAME.standbyExitStartFrame = frameCount;
 }
 
 // ============================================================

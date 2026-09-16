@@ -42,6 +42,12 @@ function handleMIDIMessage(event) {
 
   console.log(`NOTE ${note} | VELOCITY ${velocity} | CHANNEL ${channel + 1}`);
 
+  // No standby, qualquer nota arranca o jogo em vez de bater fila.
+  if (GAME.state === "standby") {
+    exitStandby();
+    return;
+  }
+
   ensureAudioContext();
 
   const lane = getLaneFromMIDINote(note);
@@ -67,12 +73,9 @@ const KEY_TO_LANE = { "1": "blue", "2": "green", "3": "yellow", "4": "red" };
 
 function keyPressed() {
 
-  // SPACE
-  if (keyCode === 32) {
-    if (GAME.state === "ready") {
-      startCountdown();
-    }
-
+  // No standby, qualquer tecla arranca o jogo.
+  if (GAME.state === "standby") {
+    exitStandby();
     return false;
   }
 

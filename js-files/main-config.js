@@ -324,6 +324,37 @@ const NEXT_LEVEL_TRANSITION = {
 };
 
 // ============================================================
+// SCREEN WIPE — CORTE GENÉRICO ENTRE ECRÃS
+//
+// Fundo preto sem conteúdo próprio, que sobe a opaco e volta a
+// zero: esconde a troca por baixo, tanto ao sair do standby (ver
+// exitStandby() em game-state.js) como no fim do game over (ver
+// updateGameOver() em game-loop.js). Ao contrário do fade da
+// transição de nível, não tem nada para revelar aos poucos — o
+// ecrã de baixo já está pronto assim que o corte acontece.
+// ============================================================
+
+const SCREEN_WIPE = {
+  // ~60fps, o framerate por omissão do p5 — medido em frames,
+  // não em segundos, porque nenhuma destas transições precisa
+  // de sincronizar com o relógio de áudio.
+  cutFrames: 24,
+  durationFrames: 48
+};
+
+// ============================================================
+// GAME OVER — SAÍDA
+//
+// Ao fim de displayFrames no ecrã de game over, o jogo volta ao
+// standby através do SCREEN_WIPE (ver updateGameOver() em
+// game-loop.js).
+// ============================================================
+
+const GAME_OVER_EXIT = {
+  displayFrames: 720 // 12s a 60fps
+};
+
+// ============================================================
 // QUATRO FILAS / INSTRUMENTOS
 // A ordem corresponde às quatro filas físicas do MIDI Fighter
 // ============================================================

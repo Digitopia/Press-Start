@@ -1214,3 +1214,146 @@ function drawGameOverOverlay() {
     pop();
   }
 }
+
+// ============================================================
+// STANDBY — ECRÃ DE ESPERA
+//
+// Ecrã cheio, não uma camada sobre o jogo (ver sketch.js): o
+// background(12) apaga o que já se tinha desenhado neste frame.
+// O título é branco; o contorno de cada letra (via stroke() no
+// próprio text()) cicla pelas cores das filas.
+// ============================================================
+
+const STANDBY_TITLE = "TITULO TBD";
+
+// "PRESS" e "START" alternam de cor; o meio fica sempre branco.
+// Sem espaços nas strings — a folga é feita em pixels, mais
+// abaixo, porque o espaço embutido não estava a renderizar-se.
+const STANDBY_PROMPT_PREFIX = "PRESS";
+const STANDBY_PROMPT_MIDDLE = "ANY BUTTON TO";
+const STANDBY_PROMPT_SUFFIX = "START";
+const STANDBY_PROMPT_GAP = 10;
+
+// Um só relógio para o ecrã inteiro: fase branca visível, pisca,
+// fase vermelha visível, pisca. O contorno do título segue a
+// mesma fase branca — só aparece quando a frase NÃO está a
+// vermelho.
+const STANDBY_CYCLE_HOLD_FRAMES = 40;
+const STANDBY_CYCLE_GAP_FRAMES = 10;
+
+function drawStandbyOverlay() {
+  if (GAME.state !== "standby") return;
+
+  background(12);
+
+  push();
+
+  const cycleLength =
+    2 * (STANDBY_CYCLE_HOLD_FRAMES + STANDBY_CYCLE_GAP_FRAMES);
+  const cycleT = frameCount % cycleLength;
+
+  const inWhiteHold = cycleT < STANDBY_CYCLE_HOLD_FRAMES;
+  const inRedHold =
+    cycleT >= STANDBY_CYCLE_HOLD_FRAMES + STANDBY_CYCLE_GAP_FRAMES &&
+    cycleT < 2 * STANDBY_CYCLE_HOLD_FRAMES + STANDBY_CYCLE_GAP_FRAMES;
+
+  textAlign(LEFT, CENTER);
+  textSize(60);
+
+  const titleOutlineWeight = 6;
+  strokeWeight(titleOutlineWeight);
+
+  // textWidth() só mede a letra, não o contorno — parte desta
+  // folga evita que o stroke invada a letra seguinte, o resto é
+  // só espaçamento.
+  const letterGap = titleOutlineWeight * 1.5 + 10;
+
+  const titleY = height / 2 - 30;
+
+  let totalWidth = -letterGap;
+  for (const letter of STANDBY_TITLE) {
+    totalWidth += textWidth(letter) + letterGap;
+  }
+
+  let x = width / 2 - totalWidth / 2;
+
+  // O contorno só aparece na fase branca; as letras (brancas)
+  // ficam sempre visíveis, sem mudar de posição.
+  for (let i = 0; i < STANDBY_TITLE.length; i++) {
+    const letter = STANDBY_TITLE[i];
+    const lane = LANE_ORDER[i % LANE_ORDER.length];
+
+    if (inWhiteHold) {
+      stroke(...LANES[lane].color);
+    } else {
+      noStroke();
+    }
+
+    fill(255);
+    text(letter, x, titleY);
+    x += textWidth(letter) + letterGap;
+  }
+
+  noStroke();
+  textSize(16);
+
+  const promptY = titleY + 70;
+
+  if (inWhiteHold || inRedHold) {
+    const accentColor = inRedHold ? [255, 70, 70] : [255, 255, 255];
+
+    const middleWidth = textWidth(STANDBY_PROMPT_MIDDLE);
+    const leftEdge = width / 2 - middleWidth / 2 - STANDBY_PROMPT_GAP;
+    const rightEdge = width / 2 + middleWidth / 2 + STANDBY_PROMPT_GAP;
+
+    textAlign(CENTER, CENTER);
+    fill(255);
+    text(STANDBY_PROMPT_MIDDLE, width / 2, promptY);
+
+    textAlign(RIGHT, CENTER);
+    fill(...accentColor);
+    text(STANDBY_PROMPT_PREFIX, leftEdge, promptY);
+
+    textAlign(LEFT, CENTER);
+    fill(...accentColor);
+    text(STANDBY_PROMPT_SUFFIX, rightEdge, promptY);
+  }
+
+  pop();
+}
+
+// ============================================================
+// SCREEN WIPE
+//
+// Fundo preto sem conteúdo próprio: sobe a opaco até ao corte,
+// desce a zero até ao fim (ver SCREEN_WIPE em main-config.js).
+// drawStandbyExitOverlay() e drawGameOverExitOverlay() só
+// passam o seu próprio frame de início — o resto é igual.
+// ============================================================
+
+function drawScreenWipe(startFrame) {
+  if (startFrame === null) return;
+
+  const elapsedFrames = frameCount - startFrame;
+
+  if (elapsedFrames >= SCREEN_WIPE.durationFrames) return;
+
+  const progress = elapsedFrames / SCREEN_WIPE.durationFrames;
+  const cutProgress = SCREEN_WIPE.cutFrames / SCREEN_WIPE.durationFrames;
+
+  const bgAlpha = progress < cutProgress
+    ? map(progress, 0, cutProgress, 0, 255)
+    : map(progress, cutProgress, 1, 255, 0);
+
+  noStroke();
+  fill(0, bgAlpha);
+  rect(0, 0, width, height);
+}
+
+function drawStandbyExitOverlay() {
+  drawScreenWipe(GAME.standbyExitStartFrame);
+}
+
+function drawGameOverExitOverlay() {
+  drawScreenWipe(GAME.gameOverExitStartFrame);
+}

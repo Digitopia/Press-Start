@@ -49,11 +49,13 @@ function updateClickTransport() {
     const isDownbeat =
       CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
 
-    // Beat 1 ligeiramente mais forte
+    // Beat 1 ligeiramente mais forte. Volumes mais altos do que
+    // o original (0.08/0.045) — o click perdia-se por baixo do
+    // acompanhamento.
     scheduleBeep(
       isDownbeat ? 520 : 440,
       isDownbeat ? 35 : 30,
-      isDownbeat ? 0.08 : 0.045,
+      isDownbeat ? 0.14 : 0.08,
       CLICK_TRANSPORT.nextBeatTime
     );
 

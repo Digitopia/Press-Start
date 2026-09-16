@@ -60,7 +60,7 @@ const PLAYER_AUDIO = {
     failures: {
         miss: null,
         wrong: { voice: "thud", volume: 0.55 },
-        stray: { voice: "tick", volume: 0.30 }
+        stray: { voice: "tick", volume: 0.20 }
     },
 
     // Estas duas são as únicas vozes longas do ficheiro. Ficam
@@ -710,16 +710,16 @@ const FEEDBACK_VOICES = {
 
     // Bateu sem nota nenhuma por perto. É de propósito o som
     // mais pequeno do ficheiro: a punição a sério é o combo a
-    // zero, não o barulho. Mais agudo e mais curto do que antes —
-    // a 210 Hz confundia-se com um "boop" surdo; assim lê-se
-    // mesmo como um tick, mesmo a este volume baixo.
+    // zero, não o barulho. Mais grave e discreto do que a versão
+    // aguda anterior (900Hz) — aquele registo confundia-se com o
+    // clap; este fica por baixo, sem se misturar.
     tick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
             durationSeconds: 0.03,
-            volume: volume * 0.42,
-            startFrequency: 900,
-            endFrequency: 650,
+            volume: volume * 0.30,
+            startFrequency: 260,
+            endFrequency: 180,
             pitchDecaySeconds: 0.012,
             oscillator: "sine",
             attackSeconds: 0.001

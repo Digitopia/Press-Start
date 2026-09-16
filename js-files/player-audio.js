@@ -24,12 +24,12 @@ const PLAYER_AUDIO = {
     // Ganho do bus inteiro. O acompanhamento tem
     // MUSIC.masterVolume a 0.18 por baixo — é aqui que se afina
     // a relação entre o gesto e a música.
-    masterVolume: 0.3,
+    masterVolume: 0.25,
 
     // Quanto deste bus vai para a reverb partilhada com a
     // música (core-audio.js). Sinal seco, antes da saturação —
     // a sala recebe o gesto, não a distorção.
-    reverbSend: 0.14,
+    reverbSend: 0.07,
 
     accent: {
         PERFECT: 1.0,
@@ -40,10 +40,17 @@ const PLAYER_AUDIO = {
     // A ordem segue LANE_ORDER: do agudo (blue) ao grave (red),
     // tal como as frequências dos beeps antigos.
     lanes: {
-        blue: { voice: "hihat", volume: 1.0 },
-        green: { voice: "clap", volume: 1.0 },
-        yellow: { voice: "snare", volume: 0.28 },
-        red: { voice: "kick", volume: 0.20 }
+        blue: { voice: "hihat", volume: 0.3 },
+        green: { voice: "clap", volume: 0.7 },
+        // Mais baixa do que estava (0.28) — tinha ficado alta
+        // demais a par das outras filas.
+        yellow: { voice: "snare", volume: 0.25 },
+        // Mais alta do que estava (0.20): o kick era a fila mais
+        // fraca das quatro, e uma fundamental grave e quieta
+        // quase não distorce no saturador do bus (ver comentário
+        // em cima de getPlayerBus) — sem distorção não há os
+        // harmónicos que dão corpo em colunas pequenas.
+        red: { voice: "kick", volume: 0.35 }
     },
 
     // As chaves são as de FAILURES (main-config.js).
@@ -438,71 +445,105 @@ function scheduleMetallicBurst({
 
 const PERCUSSION_VOICES = {
 
-    // Sinusoide pura, sem uma gota de ruído: a queda de 150
-    // para 48 Hz é o bombo todo. O transiente é um blip agudo
-    // curtíssimo, e não um click de ruído — é o que dá o
-    // "ponto" do ataque sem sujar o grave.
+    // Corpo em "triangle", não sine puro: uma sinusoide é limpa
+    // demais — zero harmónicos, por isso soa a blip sintético e
+    // depende só da saturação do bus para ganhar peso. Triangle
+    // já traz harmónicos próprios (a mesma razão do baixo do
+    // music-transport, ver comentário acima de getPlayerBus), o
+    // que dá peso E textura ao mesmo tempo.
     kick(startTime, volume) {
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.30,
+            durationSeconds: 0.75,
             volume: volume * 0.95,
-            startFrequency: 150,
-            endFrequency: 48,
-            pitchDecaySeconds: 0.045,
-            oscillator: "sine",
+            startFrequency: 135,
+            // 46 em vez de 40: mais fundo que o original (48) mas
+            // ainda dentro do que colunas pequenas reproduzem —
+            // 40 estava tão baixo que ficava inaudível, e sem se
+            // OUVIR o grave o resto lia-se como lama, não peso.
+            endFrequency: 46,
+            // De volta a uma queda rápida: esticar isto tirava
+            // definição sem dar peso a mais — o peso vem do
+            // patamar de sustain, não daqui.
+            pitchDecaySeconds: 0.05,
+            oscillator: "triangle",
             attackSeconds: 0.002,
             holdSeconds: 0.012,
-            // O corpo do bombo: cai depressa para 40% e FICA ali
-            // 50ms — o patamar plano, não a rampa, é o que se
-            // ouve como peso — antes de a cauda o apagar.
-            sustainLevel: 0.4,
+            // O corpo do bombo: cai para 42% e FICA ali 80ms —
+            // mais comprido do que antes, é o patamar que se sente
+            // como o bombo a "durar", não a rampa final.
+            sustainLevel: 0.42,
             sustainDecaySeconds: 0.012,
-            sustainHoldSeconds: 0.05
+            sustainHoldSeconds: 0.08
         });
 
+        // O click de volta perto do original: sem ele o bombo
+        // perde o contraste entre grave e ataque e soa fino,
+        // mesmo com a fundamental mais forte.
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.22,
-            volume: volume * 0.16,
-            startFrequency: 1100,
-            endFrequency: 600,
+            durationSeconds: 0.32,
+            volume: volume * 0.26,
+            startFrequency: 900,
+            endFrequency: 300,
             pitchDecaySeconds: 0.008,
             oscillator: "sine",
             attackSeconds: 0.0005
         });
 
+        // O click do baterista: alto e curtíssimo (18ms), não um
+        // "mid" arredondado. Tinha os MESMOS parâmetros do ruído
+        // da tarola — os dois liam-se como a mesma batida
+        // repetida, e era isso que soava a fake.
         scheduleNoiseBurst({
             startTime,
-            durationSeconds: 0.13,
-            volume: volume * 0.38,
-            filterType: "bandpass",
-            frequency: 2100,
-            q: 1.4,
-            attackSeconds: 0.0006
+            durationSeconds: 0.018,
+            volume: volume * 0.45,
+            filterType: "highpass",
+            frequency: 5500,
+            q: 0.7,
+            attackSeconds: 0.0003
+        });
+
+        // Cauda grave: um sine fixo que fica a soar um pouco
+        // depois de o corpo principal já ter caído — a mesma
+        // técnica da cauda do fall() (mais abaixo neste ficheiro),
+        // encolhida ao tamanho de um bombo. Dá o "chão" que se
+        // sente mais do que se ouve, sem mexer na definição do
+        // ataque nem no ponto lá de cima.
+        schedulePercussiveTone({
+            startTime,
+            durationSeconds: 1.4,
+            volume: volume * 0.20,
+            startFrequency: 50,
+            oscillator: "sine",
+            attackSeconds: 0.006,
+            holdSeconds: 0.15
         });
     },
 
-    // Duas peles afinadas mais a bordoneira. A banda do ruído
-    // é estreita (q 1.4) e curta: em banda larga a tarola
-    // espalha-se por cima do chimbau e das palmas, e é daí que
-    // vinha a sensação de coisa suja.
+    // Duas peles afinadas mais a bordoneira. A bordoneira é um
+    // bandpass — highpass sem teto deixava passar o shimmer que
+    // é território do prato/hihat, e os dois liam-se como o
+    // mesmo instrumento. Com teto mantém o "zzz" vivo contra a
+    // pele de baixo sem invadir essa zona.
     snare(startTime, volume) {
         schedulePercussiveTone({
             startTime,
-            durationSeconds: 0.11,
-            volume: volume * 0.34,
+            durationSeconds: 0.13,
+            volume: volume * 0.38,
             startFrequency: 200,
             endFrequency: 168,
             pitchDecaySeconds: 0.05,
             oscillator: "sine",
             attackSeconds: 0.001,
             holdSeconds: 0.006,
-            // O mesmo patamar do kick, encolhido para os 110ms
-            // da tarola.
-            sustainLevel: 0.35,
-            sustainDecaySeconds: 0.006,
-            sustainHoldSeconds: 0.02
+            // Patamar um pouco mais alto e mais comprido do que
+            // antes — o mesmo truque do kick para dar corpo à
+            // fundamental, sem esticar a tarola toda.
+            sustainLevel: 0.42,
+            sustainDecaySeconds: 0.008,
+            sustainHoldSeconds: 0.03
         });
 
         schedulePercussiveTone({
@@ -518,12 +559,13 @@ const PERCUSSION_VOICES = {
 
         scheduleNoiseBurst({
             startTime,
-            durationSeconds: 0.13,
-            volume: volume * 0.38,
+            durationSeconds: 0.3,
+            volume: volume * 0.48,
             filterType: "bandpass",
-            frequency: 2100,
-            q: 1.4,
-            attackSeconds: 0.0006
+            frequency: 2600,
+            q: 1.0,
+            attackSeconds: 0.0005,
+            holdSeconds: 0.006
         });
     },
 
@@ -540,7 +582,7 @@ const PERCUSSION_VOICES = {
             scheduleNoiseBurst({
                 startTime: startTime + reflection.offset,
                 durationSeconds: 0.014,
-                volume: volume * reflection.volume * 0.55,
+                volume: volume * reflection.volume * 0.75,
                 filterType: "bandpass",
                 frequency: 1500,
                 q: 1.8,
@@ -551,7 +593,7 @@ const PERCUSSION_VOICES = {
         scheduleNoiseBurst({
             startTime: startTime + 0.022,
             durationSeconds: 0.085,
-            volume: volume * 0.26,
+            volume: volume * 0.46,
             filterType: "bandpass",
             frequency: 1350,
             q: 1.5,
@@ -559,49 +601,35 @@ const PERCUSSION_VOICES = {
         });
     },
 
-    // Metal, não ruído. Fechado e curto: é a fila mais aguda e,
-    // nos níveis densos, a que mais vezes toca seguida.
+    // Metal, não ruído. É a fila mais aguda e, nos níveis
+    // densos, a que mais vezes toca seguida — por isso esta
+    // duração é a que arrisca mais mancha das quatro; testar em
+    // nível denso, não só isolado, antes de esticar mais.
     hihat(startTime, volume) {
         scheduleMetallicBurst({
             startTime,
-            durationSeconds: 0.042,
-            volume: volume * 0.42,
+            durationSeconds: 0.15,
+            volume: volume * 0.45,
             baseFrequency: 320,
             filterType: "highpass",
-            frequency: 8200,
+            frequency: 5200,
             q: 0.8
         });
-    },
 
-    // Livre — não está atribuído a nenhuma fila.
-    tom(startTime, volume) {
-        schedulePercussiveTone({
+        // O "shhh": o metal sozinho dá o corpo, mas não a
+        // respiração de ar que um hihat de verdade tem por cima.
+        // Mais agudo que o teto da tarola (2600), para não voltar
+        // a confundir-se com ela.
+        scheduleNoiseBurst({
             startTime,
-            durationSeconds: 0.26,
-            volume: volume * 0.55,
-            startFrequency: 300,
-            endFrequency: 160,
-            pitchDecaySeconds: 0.08,
-            oscillator: "sine",
-            attackSeconds: 0.002,
-            holdSeconds: 0.01
+            durationSeconds: 0.1,
+            volume: volume * 0.40,
+            filterType: "highpass",
+            frequency: 8000,
+            q: 0.7,
+            attackSeconds: 0.0008
         });
     },
-
-    // Livre — não está atribuído a nenhuma fila. Perdeu o ruído
-    // que tinha por cima: sem ele o aro fica mais nítido, que é
-    // a única razão para se usar um rim.
-    rim(startTime, volume) {
-        scheduleMetallicBurst({
-            startTime,
-            durationSeconds: 0.028,
-            volume: volume * 0.45,
-            baseFrequency: 620,
-            filterType: "bandpass",
-            frequency: 2400,
-            q: 1.2
-        });
-    }
 };
 
 

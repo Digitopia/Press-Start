@@ -99,7 +99,7 @@ const MUSIC = {
   // jogador (core-audio.js). O clique do metrónomo fica de
   // fora de propósito — é referência de tempo, não performance,
   // e a reverb turvaria o ataque que o torna útil.
-  reverbSend: 0.16,
+  reverbSend: 0.04,
 
   chordBank: {
     cm: {

@@ -97,14 +97,14 @@ function midiNoteToFrequency(note) {
 // ============================================================
 
 const SHARED_REVERB = { input: null, convolver: null, returnGain: null };
-const SHARED_REVERB_RETURN_VOLUME = 0.3;
+const SHARED_REVERB_RETURN_VOLUME = 0.15;
 
 // Afasta a cauda do impacto direto — sem isto a reverb começa
 // no mesmo instante da batida e cola-se a ela; com um pre-delay
 // curto, o ouvido separa as duas e a batida continua nítida.
 const SHARED_REVERB_PRE_DELAY_SECONDS = 0.02;
 
-function createReverbImpulse(durationSeconds = 0.9, decay = 2.2) {
+function createReverbImpulse(durationSeconds = 0.6, decay = 0.8) {
   const length = Math.floor(audioCtx.sampleRate * durationSeconds);
   const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
 

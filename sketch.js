@@ -93,11 +93,33 @@ function getVisibleArea() {
 }
 
 // ============================================================
+// ORIENTAÇÃO
+//
+// O ecrã na vertical é um ESTADO do jogo, não um aviso por cima
+// dele (ver enterRotateMode() em game-state.js) — entrar reseta
+// a partida em vez de a deixar a correr escondida.
+//
+// Verificado a cada frame e não só em windowResized(): em vários
+// browsers móveis rodar o aparelho não dispara um resize fiável
+// a tempo.
+// ============================================================
+
+function updateOrientation() {
+  if (windowHeight > windowWidth) {
+    enterRotateMode();
+  } else {
+    exitRotateMode();
+  }
+}
+
+// ============================================================
 // DRAW
 // ============================================================
 
 function draw() {
   background(12);
+
+  updateOrientation();
 
   updateGame();
 
@@ -105,7 +127,9 @@ function draw() {
 
   applyScreenScale();
 
-  if (GAME.state === "standby") {
+  if (GAME.state === "rotate") {
+    drawRotateOverlay();
+  } else if (GAME.state === "standby") {
     drawStandbyOverlay();
   } else {
     drawHeader();

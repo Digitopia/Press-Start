@@ -369,6 +369,36 @@ function exitStandby() {
 }
 
 // ============================================================
+// ROTATE — ECRÃ NA VERTICAL
+//
+// Não é um aviso por cima do jogo: é um estado como qualquer
+// outro. Entrar reseta a partida a sério, em vez de a deixar a
+// correr escondida por trás do aviso — com o ecrã na vertical o
+// jogador não vê as notas nem a barra de vida, portanto continuar
+// a contar MISSES seria roubar-lhe uma partida que ele não está
+// sequer a ver.
+//
+// Sair devolve ao standby, nunca ao jogo a meio: já não há nada
+// para retomar.
+//
+// Quem liga e desliga este estado é updateOrientation(), em
+// sketch.js.
+// ============================================================
+
+function enterRotateMode() {
+  if (GAME.state === "rotate") return;
+
+  resetGame();
+  GAME.state = "rotate";
+}
+
+function exitRotateMode() {
+  if (GAME.state !== "rotate") return;
+
+  GAME.state = "standby";
+}
+
+// ============================================================
 // MUDAR NÍVEL
 // ============================================================
 

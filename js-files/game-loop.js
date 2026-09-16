@@ -4,6 +4,10 @@
 
 function updateGame() {
 
+  // Nada a atualizar: o jogo já foi reposto ao entrar neste
+  // estado e só se espera que o ecrã volte à horizontal.
+  if (GAME.state === "rotate") return;
+
   if (!audioCtx) return;
 
   if (GAME.state === "standby") {

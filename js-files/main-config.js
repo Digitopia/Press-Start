@@ -39,7 +39,10 @@ const FONT_SIZES = {
 
   // standby
   standbyTitle: 60,   // título do ecrã de espera
-  standbyPrompt: 16   // "PRESS ANY BUTTON TO START"
+  standbyPrompt: 16,  // "PRESS ANY BUTTON TO START"
+
+  // rotate (ecrã na vertical)
+  rotateTitle: 28     // "ROTATE SCREEN"
 };
 
 // ============================================================

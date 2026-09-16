@@ -1319,6 +1319,38 @@ function drawStandbyOverlay() {
 }
 
 // ============================================================
+// ROTATE — ECRÃ NA VERTICAL
+//
+// Ecrã cheio, como o standby, e sem jogo por baixo: o estado já
+// foi todo reposto por enterRotateMode() (game-state.js).
+//
+// É o único ecrã centrado na ÁREA VISÍVEL em vez do retângulo do
+// jogo. Na vertical, esse retângulo é uma faixa estreita no meio
+// do ecrã — o aviso ficaria espremido lá dentro, com o ecrã todo
+// à volta vazio, que é o contrário do que ele precisa de ser.
+//
+// ============================================================
+
+function drawRotateOverlay() {
+  const area = getVisibleArea();
+
+  push();
+
+  noStroke();
+  textAlign(CENTER, CENTER);
+  fill(235);
+  textSize(FONT_SIZES.rotateTitle);
+
+  text(
+    "ROTATE SCREEN",
+    area.x + area.width / 2,
+    area.y + area.height / 2
+  );
+
+  pop();
+}
+
+// ============================================================
 // SCREEN WIPE
 //
 // Fundo preto sem conteúdo próprio: sobe a opaco até ao corte,

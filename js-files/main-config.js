@@ -92,8 +92,14 @@ function createHitWindows({
 // ============================================================
 
 const MUSIC = {
-  masterVolume: 0.18,
+  masterVolume: 0.3,
   scheduleAheadSeconds: 0.12,
+
+  // Quanto do sessionGain vai para a reverb partilhada com o
+  // jogador (core-audio.js). O clique do metrónomo fica de
+  // fora de propósito — é referência de tempo, não performance,
+  // e a reverb turvaria o ataque que o torna útil.
+  reverbSend: 0.16,
 
   chordBank: {
     cm: {

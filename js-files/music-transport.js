@@ -292,6 +292,11 @@ function startMusicTransport(startTime) {
   );
   MUSIC_TRANSPORT.sessionGain.connect(audioCtx.destination);
 
+  // Send para a sala partilhada com o jogador (core-audio.js).
+  // O sessionGain é recriado a cada start; o send tem de ser
+  // refeito com ele, mas a sala em si só é criada uma vez.
+  sendToSharedReverb(MUSIC_TRANSPORT.sessionGain, MUSIC.reverbSend);
+
   MUSIC_TRANSPORT.playing = true;
   MUSIC_TRANSPORT.nextBarTime = startTime;
   MUSIC_TRANSPORT.barIndex = 0;

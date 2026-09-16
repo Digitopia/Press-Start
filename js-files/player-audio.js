@@ -4,7 +4,7 @@
 // Tudo o que soa em resposta ao GESTO: o acerto, o erro, a
 // vida perdida, o fim de jogo. 
 //
-// Depende de: audioCtx e SFX_LOOKAHEAD_SECONDS (audio.js)
+// Depende de: audioCtx e SFX_LOOKAHEAD_SECONDS (core-audio.js)
 // ============================================================
 
 
@@ -26,6 +26,11 @@ const PLAYER_AUDIO = {
     // a relação entre o gesto e a música.
     masterVolume: 0.3,
 
+    // Quanto deste bus vai para a reverb partilhada com a
+    // música (core-audio.js). Sinal seco, antes da saturação —
+    // a sala recebe o gesto, não a distorção.
+    reverbSend: 0.14,
+
     accent: {
         PERFECT: 1.0,
         GOOD: 0.8,
@@ -37,8 +42,8 @@ const PLAYER_AUDIO = {
     lanes: {
         blue: { voice: "hihat", volume: 1.0 },
         green: { voice: "clap", volume: 1.0 },
-        yellow: { voice: "snare", volume: 0.7 },
-        red: { voice: "kick", volume: 0.60 }
+        yellow: { voice: "snare", volume: 0.28 },
+        red: { voice: "kick", volume: 0.20 }
     },
 
     // As chaves são as de FAILURES (main-config.js).
@@ -113,6 +118,8 @@ function getPlayerBus() {
 
         PLAYER_BUS.gain.connect(PLAYER_BUS.saturator);
         PLAYER_BUS.saturator.connect(audioCtx.destination);
+
+        sendToSharedReverb(PLAYER_BUS.gain, PLAYER_AUDIO.reverbSend);
     }
 
     return PLAYER_BUS.gain;
@@ -128,13 +135,16 @@ function getPlayerBus() {
 // começa a cair no instante em que chega ao topo, e por mais
 // que se estique a cauda nunca ganha corpo.
 //
-// sustainLevel/sustainDecaySeconds são opcionais e partem a
-// queda em dois andares: primeiro uma queda RÁPIDA do pico até
-// sustainLevel (o transiente a esvaziar-se), só depois a cauda
-// longa e lenta até 0.0001 em endTime (o corpo a apagar-se). Sem
-// isto a queda é uma reta só, e os primeiros 40-90ms — que são
-// o corpo, não o transiente — já vão a descer a pique. Por
-// omissão sustainLevel é 0 e o comportamento é o de antes.
+// sustainLevel/sustainDecaySeconds/sustainHoldSeconds são
+// opcionais e acrescentam um DEGRAU PLANO à queda: cai depressa
+// do pico até sustainLevel (sustainDecaySeconds), fica ali
+// PARADO (sustainHoldSeconds — o mesmo truque do hold: um
+// setValueAtTime sem rampa a seguir), só depois começa a cauda
+// exponencial até 0.0001 em endTime. É o patamar plano que dá
+// corpo — duas rampas exponenciais em série, sem hold no meio,
+// não bastam: a diferença entre as taxas é pequena de mais para
+// se ouvir. Por omissão sustainLevel é 0 e o comportamento é o
+// de antes.
 // ============================================================
 
 function applyPercussiveEnvelope(gain, {
@@ -144,13 +154,15 @@ function applyPercussiveEnvelope(gain, {
     attackSeconds,
     holdSeconds = 0,
     sustainLevel = 0,
-    sustainDecaySeconds = 0
+    sustainDecaySeconds = 0,
+    sustainHoldSeconds = 0
 }) {
     const endTime = startTime + durationSeconds;
     const attackEnd = Math.min(endTime, startTime + attackSeconds);
     const holdEnd = Math.min(endTime, attackEnd + holdSeconds);
     const bodyLevel = volume * sustainLevel;
-    const bodyEnd = Math.min(endTime, holdEnd + sustainDecaySeconds);
+    const decayEnd = Math.min(endTime, holdEnd + sustainDecaySeconds);
+    const sustainEnd = Math.min(endTime, decayEnd + sustainHoldSeconds);
 
     gain.gain.setValueAtTime(0.0001, startTime);
     gain.gain.linearRampToValueAtTime(volume, attackEnd);
@@ -159,8 +171,12 @@ function applyPercussiveEnvelope(gain, {
         gain.gain.setValueAtTime(volume, holdEnd);
     }
 
-    if (bodyLevel > 0 && bodyEnd > holdEnd) {
-        gain.gain.exponentialRampToValueAtTime(bodyLevel, bodyEnd);
+    if (bodyLevel > 0 && decayEnd > holdEnd) {
+        gain.gain.exponentialRampToValueAtTime(bodyLevel, decayEnd);
+
+        if (sustainEnd > decayEnd) {
+            gain.gain.setValueAtTime(bodyLevel, sustainEnd);
+        }
     }
 
     gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
@@ -279,7 +295,8 @@ function schedulePercussiveTone({
     attackSeconds = 0.002,
     holdSeconds = 0,
     sustainLevel = 0,
-    sustainDecaySeconds = 0
+    sustainDecaySeconds = 0,
+    sustainHoldSeconds = 0
 }) {
     const bus = getPlayerBus();
 
@@ -307,7 +324,8 @@ function schedulePercussiveTone({
         attackSeconds,
         holdSeconds,
         sustainLevel,
-        sustainDecaySeconds
+        sustainDecaySeconds,
+        sustainHoldSeconds
     });
 
     osc.connect(gain);
@@ -435,11 +453,12 @@ const PERCUSSION_VOICES = {
             oscillator: "sine",
             attackSeconds: 0.002,
             holdSeconds: 0.012,
-            // O corpo do bombo. Sem isto, a partir dos 14ms já ia
-            // tudo a direito para 0.0001 — os 40-90ms que dão peso
-            // à batida caíam a pique junto com o resto da cauda.
-            sustainLevel: 0.45,
-            sustainDecaySeconds: 0.028
+            // O corpo do bombo: cai depressa para 40% e FICA ali
+            // 50ms — o patamar plano, não a rampa, é o que se
+            // ouve como peso — antes de a cauda o apagar.
+            sustainLevel: 0.4,
+            sustainDecaySeconds: 0.012,
+            sustainHoldSeconds: 0.05
         });
 
         schedulePercussiveTone({
@@ -479,10 +498,11 @@ const PERCUSSION_VOICES = {
             oscillator: "sine",
             attackSeconds: 0.001,
             holdSeconds: 0.006,
-            // O mesmo corpo do kick, encolhido para os 110ms da
-            // tarola.
-            sustainLevel: 0.4,
-            sustainDecaySeconds: 0.015
+            // O mesmo patamar do kick, encolhido para os 110ms
+            // da tarola.
+            sustainLevel: 0.35,
+            sustainDecaySeconds: 0.006,
+            sustainHoldSeconds: 0.02
         });
 
         schedulePercussiveTone({

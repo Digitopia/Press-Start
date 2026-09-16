@@ -46,7 +46,11 @@ function playBeep(frequency, durationMs, volume = 0.25) {
   );
 }
 
-function scheduleBeep(frequency, durationMs, volume, startTime) {
+// destination omitido = direto à saída, sem passar por bus
+// nenhum. Quem precisa de poder calar os beeps depois de já os
+// ter agendado passa aqui o seu próprio gain (ver o metrónomo
+// em music-transport.js).
+function scheduleBeep(frequency, durationMs, volume, startTime, destination) {
   if (!audioCtx) return null;
 
   const durationSeconds = durationMs / 1000;
@@ -58,7 +62,8 @@ function scheduleBeep(frequency, durationMs, volume, startTime) {
     volume,
     oscillator: "sine",
     attackSeconds: 0.004,
-    releaseSeconds: durationSeconds
+    releaseSeconds: durationSeconds,
+    destination
   });
 }
 

@@ -27,12 +27,37 @@ const MUSIC_TRANSPORT = {
 // nextBeatTime é o instante do próximo click AINDA NÃO agendado.
 // beatIndex é absoluto: conta desde o início do transporte, o
 // que faz o beat 1 cair sempre em beatIndex % beatsPerBar === 0.
+//
+// O click tem bus PRÓPRIO, e não o sessionGain da música, por
+// duas razões que puxam em sentidos opostos:
+//
+//   - precisa de um gain nosso, senão não há maneira de o calar
+//     depois de agendado. E é sempre agendado com antecedência
+//     (MUSIC.scheduleAheadSeconds), por isso há sempre clicks no
+//     futuro quando o transporte pára — era isso que deixava
+//     ouvir o tempo 1 do compasso seguinte depois de mudar de
+//     nível;
+//   - mas não pode ser o sessionGain, que tem send para a reverb
+//     partilhada. O metrónomo fica fora dela de propósito (ver
+//     MUSIC.reverbSend em main-config.js): é referência de
+//     tempo, e a cauda turvava o ataque que o torna útil.
 // ============================================================
 
 const CLICK_TRANSPORT = {
   nextBeatTime: null,
-  beatIndex: 0
+  beatIndex: 0,
+  gain: null
 };
+
+// Quanto do volume do metrónomo sobra neste nível: 1 no nível 1,
+// 0 a partir de METRONOME.silentFromLevel (ver main-config.js).
+function getMetronomeFade(level) {
+  const lastAudibleLevel = METRONOME.silentFromLevel - 1;
+
+  if (level > lastAudibleLevel) return 0;
+
+  return 1 - (level - 1) / lastAudibleLevel;
+}
 
 function updateClickTransport() {
   if (CLICK_TRANSPORT.nextBeatTime === null || !audioCtx) return;
@@ -42,20 +67,28 @@ function updateClickTransport() {
   const scheduleLimit =
     audioCtx.currentTime + MUSIC.scheduleAheadSeconds;
 
+  const fade = getMetronomeFade(GAME.level);
+
   // while e não if: se uma frame se atrasar, não se perde
   // nenhum click — agendam-se todos os que couberem.
   while (CLICK_TRANSPORT.nextBeatTime <= scheduleLimit) {
     const isDownbeat =
       CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
 
-    // Beat 1 ligeiramente mais forte, e ambos altos o suficiente
-    // para não se perderem por baixo do acompanhamento.
-    scheduleBeep(
-      isDownbeat ? 520 : 440,
-      isDownbeat ? 35 : 30,
-      isDownbeat ? 0.14 : 0.08,
-      CLICK_TRANSPORT.nextBeatTime
-    );
+    const click = isDownbeat ? METRONOME.downbeat : METRONOME.offbeat;
+    const volume = click.volume * fade;
+
+    // Os contadores avançam na mesma quando o metrónomo já é
+    // mudo: o que se cala é o som, não o relógio.
+    if (volume > 0) {
+      scheduleBeep(
+        click.frequency,
+        click.durationMs,
+        volume,
+        CLICK_TRANSPORT.nextBeatTime,
+        CLICK_TRANSPORT.gain
+      );
+    }
 
     CLICK_TRANSPORT.nextBeatTime += beatDurationSeconds;
     CLICK_TRANSPORT.beatIndex++;
@@ -306,7 +339,10 @@ function startMusicTransport(startTime) {
   }));
 
   // O metrónomo parte da mesma origem temporal que a música
-  // e que o playhead.
+  // e que o playhead. Sem send para a reverb, de propósito.
+  CLICK_TRANSPORT.gain = audioCtx.createGain();
+  CLICK_TRANSPORT.gain.connect(audioCtx.destination);
+
   CLICK_TRANSPORT.nextBeatTime = startTime;
   CLICK_TRANSPORT.beatIndex = 0;
 
@@ -322,6 +358,29 @@ function stopMusicTransport() {
   CLICK_TRANSPORT.nextBeatTime = null;
 
   const stopTime = audioCtx.currentTime + 0.035;
+
+  // Mais curto que o stopTime da música: um click do metrónomo
+  // dura 30–35ms, portanto um fade tão longo como o dela
+  // deixava-o tocar por inteiro. Curto, mas em rampa — cortar a
+  // seco põe um estalo no lugar do click.
+  const clickStopTime = audioCtx.currentTime + 0.008;
+
+  if (CLICK_TRANSPORT.gain) {
+    const clickGain = CLICK_TRANSPORT.gain.gain;
+
+    clickGain.cancelScheduledValues(audioCtx.currentTime);
+    clickGain.setValueAtTime(
+      Math.max(clickGain.value, 0.0001),
+      audioCtx.currentTime
+    );
+    clickGain.exponentialRampToValueAtTime(0.0001, clickStopTime);
+
+    // Os osciladores já agendados continuam ligados a este nó e
+    // desligam-se sozinhos quando acabam (ver scheduleTone());
+    // o que se perde aqui é só a nossa referência, para o
+    // próximo start criar um bus limpo.
+    CLICK_TRANSPORT.gain = null;
+  }
 
   if (MUSIC_TRANSPORT.sessionGain) {
     const gain = MUSIC_TRANSPORT.sessionGain.gain;

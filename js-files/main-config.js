@@ -128,6 +128,34 @@ function createHitWindows({
 }
 
 // ============================================================
+// METRÓNOMO
+//
+// O click é um andaime: está lá para se aprender onde cai o
+// tempo, e vai-se embora à medida que o tempo passa a estar na
+// cabeça de quem joga. A cada nível ouve-se menos, até ficar
+// mudo em silentFromLevel.
+//
+// É a mesma ideia das flags de visibilidade em level-config.js
+// (a linha, a grelha, o preview): tira-se informação, não se
+// mudam as regras. O tempo continua todo lá — o baixo ancora
+// sempre o primeiro tempo de cada compasso.
+// ============================================================
+
+const METRONOME = {
+  // O primeiro tempo é mais alto e mais agudo que os outros: diz
+  // ONDE começa o compasso, não só onde cai o tempo.
+  downbeat: { frequency: 520, durationMs: 35, volume: 0.14 },
+  offbeat: { frequency: 440, durationMs: 30, volume: 0.08 },
+
+  // Nível a partir do qual o metrónomo não se ouve de todo. Até
+  // lá o volume desce em partes iguais, nível a nível.
+  //
+  // Pôr 1 cala-o desde o início; pôr um número maior do que o
+  // total de níveis faz com que nunca chegue a desaparecer.
+  silentFromLevel: 10
+};
+
+// ============================================================
 // MÚSICA
 //
 // Os números são notas MIDI e são convertidos em frequência

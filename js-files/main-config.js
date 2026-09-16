@@ -307,6 +307,23 @@ const LIFE_LOST_ZOOM = {
 };
 
 // ============================================================
+// PRÓXIMO NÍVEL — TRANSIÇÃO
+//
+// O ecrã corta para preto opaco antes de se gerar o compasso do
+// nível novo — impede que as notas do nível seguinte apareçam
+// por baixo do fade out do anterior (ver drawNextLevelOverlay()
+// em renderer.js e updateCountdown() em game-loop.js).
+// ============================================================
+
+const NEXT_LEVEL_TRANSITION = {
+  // Tempo até o ecrã ficar preto opaco.
+  cutSeconds: 0.4,
+
+  // Duração total da transição, corte incluído.
+  durationSeconds: 1
+};
+
+// ============================================================
 // QUATRO FILAS / INSTRUMENTOS
 // A ordem corresponde às quatro filas físicas do MIDI Fighter
 // ============================================================

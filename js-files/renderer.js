@@ -960,23 +960,54 @@ function drawCountdownOverlay() {
 
 // ============================================================
 // NEXT LEVEL – OVERLAY
+//
+// Duas fases, uma a seguir à outra:
+//   1. o jogo desvanece para preto opaco, sem letras — o mesmo
+//      corte que updateCountdown() usa para saber quando gerar
+//      o compasso do nível novo (NEXT_LEVEL_TRANSITION em
+//      main-config.js);
+//   2. o texto faz fade in enquanto o fundo alivia até à
+//      opacidade normal, os dois juntos.
+//
+// A fase 2 já pode revelar a game area: o compasso novo (e o
+// lado ativo) já foram construídos no corte da fase 1, por isso
+// não há nada errado para se ver por trás.
 // ============================================================
 
 function drawNextLevelOverlay() {
-  if (GAME.state !== "nextlevel" || GAME.countdownBeat === null) {
+  if (GAME.state !== "nextlevel" || GAME.nextLevelAudioTime === null) {
     return;
   }
 
   const config = getCurrentLevelConfig();
 
   const number =
-    config.beatsPerBar - GAME.countdownBeat;
+    config.beatsPerBar - (GAME.countdownBeat ?? 0);
+
+  const elapsed = audioCtx.currentTime - GAME.nextLevelAudioTime;
+  const progress = constrain(elapsed / NEXT_LEVEL_TRANSITION.durationSeconds, 0, 1);
+  const cutProgress =
+    NEXT_LEVEL_TRANSITION.cutSeconds / NEXT_LEVEL_TRANSITION.durationSeconds;
+
+  let bgAlpha, textAlpha;
+
+  if (progress < cutProgress) {
+    // Fase 1: o jogo desvanece para preto opaco. Sem letras.
+    bgAlpha = map(progress, 0, cutProgress, 0, 255);
+    textAlpha = 0;
+  } else {
+    // Fase 2: o fundo alivia e o texto aparece, juntos.
+    const revealProgress = map(progress, cutProgress, 1, 0, 1);
+
+    bgAlpha = lerp(255, 140, revealProgress);
+    textAlpha = 255 * revealProgress;
+  }
 
   push();
 
-  // Fundo semi-transparente
+  // Fundo
   noStroke();
-  fill(0, 140);
+  fill(0, bgAlpha);
   rect(
     0,
     0,
@@ -985,7 +1016,7 @@ function drawNextLevelOverlay() {
   );
 
   // Número
-  fill(255);
+  fill(255, textAlpha);
   textAlign(CENTER, CENTER);
   textSize(56);
 
@@ -1007,6 +1038,7 @@ function drawNextLevelOverlay() {
 
   // HUD — informação do jogo numa única linha
 
+  fill(255, textAlpha);
   textStyle(NORMAL)
   textAlign(CENTER, CENTER);
   textSize(26);

@@ -61,6 +61,19 @@ const GAME = {
   // perdida — origem do zoom do overlay em drawLiveLostOverlay().
   lifeLostAudioTime: null,
 
+  // Verdadeiro entre o início da transição de nível e o corte
+  // para preto do overlay: só nesse instante é que
+  // buildCurrentLevel() gera o compasso do nível novo, para as
+  // notas não aparecerem antes do corte (ver updateCountdown()
+  // em game-loop.js e NEXT_LEVEL_TRANSITION em main-config.js).
+  nextLevelBarsPending: false,
+
+  // Instante (audioCtx.currentTime) em que a transição de nível
+  // começou — origem do fade em drawNextLevelOverlay(), separado
+  // de countdownStartAudioTime porque este último só marca o
+  // início do countdown a sério, adiado até a transição acabar.
+  nextLevelAudioTime: null,
+
   lastJudgement: "",
   judgementTimer: 0,
 
@@ -174,6 +187,7 @@ function loseLife() {
   // (ver comentário acima da função).
   GAME.eventResults.clear();
   buildCurrentLevel();
+  GAME.ballPosition = 0;
 
   // O countdown só arranca depois de o zoom do overlay acabar
   // (ver LIFE_LOST_ZOOM em main-config.js e beginCountdown()).
@@ -223,6 +237,34 @@ function buildCurrentLevel() {
 
 
 // ============================================================
+// COMEÇAR O NÍVEL NOVO (DEPOIS DA TRANSIÇÃO)
+//
+// changeLevel() já mudou GAME.level e começou o overlay, mas
+// chama esta função só mais tarde, no corte da transição (ver
+// updateCountdown() em game-loop.js) — até lá nada disto pode
+// mudar no ecrã, ou ver-se-ia o compasso antigo a saltar para o
+// estado do nível novo por baixo do fade out.
+// ============================================================
+
+function beginNextLevelBar() {
+  // Cada nível começa com uma tentativa limpa. A pontuação total
+  // continua acumulada, mas não conta como progresso no novo nível.
+  GAME.levelScore = 0;
+  GAME.levelTargetScore = getLevelTargetScore(GAME.level);
+
+  // A barra de vida volta ao máximo no início de cada nível.
+  // As vidas já gastas NÃO são devolvidas.
+  resetHealth();
+
+  GAME.ballPosition = 0;
+  GAME.combo = 0;
+
+  GAME.eventResults.clear();
+  buildCurrentLevel();
+}
+
+
+// ============================================================
 // AVANÇAR PARA O COMPASSO SEGUINTE
 // ============================================================
 
@@ -265,6 +307,8 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.lives = HEALTH.lives;
   GAME.health = HEALTH.max;
   GAME.lifeLostAudioTime = null;
+  GAME.nextLevelBarsPending = false;
+  GAME.nextLevelAudioTime = null;
 
   GAME.lastJudgement = "";
   GAME.judgementTimer = 0;
@@ -309,20 +353,17 @@ function changeLevel() {
     const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
     GAME.level = nextLevel;
 
-    // Cada nível começa com uma tentativa limpa. A pontuação total
-    // continua acumulada, mas não conta como progresso no novo nível.
-    GAME.levelScore = 0;
-    GAME.levelTargetScore = getLevelTargetScore(GAME.level);
+    console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
 
-    // A barra de vida volta ao máximo no início de cada nível.
-    // As vidas já gastas NÃO são devolvidas.
-    resetHealth();
-
-    console.log(`Level ${GAME.level}. Earn ${GAME.levelTargetScore} points to advance.`)
-
-    // O nível já mudou, por isso a contagem sai com o bpm novo —
-    // é ela que ensina o andamento do nível seguinte.
-    beginCountdown("nextlevel");
+    // O resto do estado do nível novo (pontuação, vida, bola,
+    // compasso) só se aplica no corte da transição, em
+    // beginNextLevelBar() — até lá o ecrã fica congelado no que
+    // já lá estava. O nível já mudou aqui porque a contagem sai
+    // com o bpm novo — é ela que ensina o andamento do nível
+    // seguinte — mas só começa a sério depois de o fade do
+    // overlay acabar (ver NEXT_LEVEL_TRANSITION em main-config.js).
+    GAME.nextLevelAudioTime = audioCtx.currentTime;
+    beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
 
     return true;
   }

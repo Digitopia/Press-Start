@@ -82,6 +82,11 @@ function markUnresolvedAsMiss(shouldMiss) {
 //
 // Além de fechar as notas em falta, gera já o compasso
 // seguinte — é aqui que a aleatoriedade "entra em jogo".
+//
+// Exceção: mudando de nível, o compasso novo só se gera mais
+// tarde, quando o overlay cortar para preto (ver
+// nextLevelBarsPending e updateCountdown()) — para as notas do
+// nível seguinte não aparecerem antes do corte.
 // ============================================================
 
 function finishCurrentBar() {
@@ -95,18 +100,20 @@ function finishCurrentBar() {
   if (GAME.state !== "playing") return;
 
   GAME.barNumber++;
-  GAME.eventResults.clear();
 
   // o nível só avança no final de compassos, nunca a meio
   const levelChanged = changeLevel();
 
   if (levelChanged) {
-    // A configuração mudou: gerar o compasso ativo e o preview
-    // com as regras do novo nível.
-    buildCurrentLevel();
+    // eventResults só se limpa quando o compasso novo for mesmo
+    // construído (updateCountdown()) — até lá o compasso que
+    // acabou de tocar continua visível como tocado, por baixo do
+    // fade out.
+    GAME.nextLevelBarsPending = true;
   } else {
     // Sem mudança de nível, o preview torna-se o compasso atual
     // e é gerado um novo preview.
+    GAME.eventResults.clear();
     advanceToNextBar();
   }
 }
@@ -318,6 +325,11 @@ function registerFailure(type, count = 1) {
 // extraDelaySeconds adia o arranque do countdown — usado pelo
 // "lifelost" para o countdown só começar depois de o zoom do
 // overlay acabar (ver LIFE_LOST_ZOOM em main-config.js).
+//
+// ballPosition e combo não se repõem aqui: cada chamador decide
+// quando (imediatamente, ou só no corte de uma transição — ver
+// beginNextLevelBar() em game-state.js), para nada mudar no
+// ecrã antes de dever mudar.
 function beginCountdown(state, extraDelaySeconds = 0) {
   GAME.state = state;
 
@@ -325,9 +337,6 @@ function beginCountdown(state, extraDelaySeconds = 0) {
     audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS + extraDelaySeconds;
 
   GAME.countdownBeat = null;
-
-  GAME.ballPosition = 0;
-  GAME.combo = 0;
 
   scheduleCountdownClicks();
 }
@@ -362,6 +371,21 @@ function updateCountdown() {
 
   const elapsed =
     audioCtx.currentTime - GAME.countdownStartAudioTime;
+
+  // O estado do nível novo só se aplica no instante em que o
+  // overlay corta para preto (ver NEXT_LEVEL_TRANSITION em
+  // main-config.js e beginNextLevelBar() em game-state.js) —
+  // antes disso nada pode mudar no ecrã. Medido a partir de
+  // nextLevelAudioTime, não daqui: countdownStartAudioTime já
+  // inclui o atraso do fade inteiro.
+  if (
+    GAME.nextLevelBarsPending &&
+    audioCtx.currentTime - GAME.nextLevelAudioTime >=
+      NEXT_LEVEL_TRANSITION.cutSeconds
+  ) {
+    beginNextLevelBar();
+    GAME.nextLevelBarsPending = false;
+  }
 
   const beatIndex = floor(elapsed / beatDurationSeconds);
 

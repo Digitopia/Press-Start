@@ -243,6 +243,7 @@ function advanceToNextBar() {
 
 function resetGame({ keepLevel = false } = {}) {
   stopMusicTransport();
+  stopCountdownClicks();
 
   if (!keepLevel) {
     GAME.level = 1;

@@ -2,6 +2,10 @@
 // CLOCK PRINCIPAL
 // ============================================================
 
+const COUNTDOWN_CLICKS = {
+  session: null
+};
+
 function updateGame() {
 
   // O jogo já foi reposto; só se espera voltar à horizontal.
@@ -340,6 +344,8 @@ function updateGameOver() {
 // extraDelaySeconds: usado pelo "lifelost" para esperar o zoom
 // do overlay. ballPosition e combo são repostos pelo chamador.
 function beginCountdown(state, extraDelaySeconds = 0) {
+  stopCountdownClicks();
+
   GAME.state = state;
 
   GAME.countdownStartAudioTime =
@@ -353,15 +359,66 @@ function beginCountdown(state, extraDelaySeconds = 0) {
 function scheduleCountdownClicks() {
   const config = getCurrentLevelConfig();
   const beatDurationSeconds = 60 / config.bpm;
+  const session = {
+    gain: audioCtx.createGain(),
+    activeSources: new Set()
+  };
+
+  session.gain.connect(audioCtx.destination);
+  COUNTDOWN_CLICKS.session = session;
 
   for (let beat = 0; beat < config.beatsPerBar; beat++) {
-    scheduleBeep(
+    const source = scheduleBeep(
       beat === 0 ? 700 : 500,
       50,
       0.12,
-      GAME.countdownStartAudioTime + beat * beatDurationSeconds
+      GAME.countdownStartAudioTime + beat * beatDurationSeconds,
+      session.gain
     );
+
+    if (!source) continue;
+
+    session.activeSources.add(source);
+    source.addEventListener("ended", () => {
+      session.activeSources.delete(source);
+
+      if (session.activeSources.size === 0) {
+        session.gain.disconnect();
+
+        if (COUNTDOWN_CLICKS.session === session) {
+          COUNTDOWN_CLICKS.session = null;
+        }
+      }
+    });
   }
+
+  if (session.activeSources.size === 0) {
+    session.gain.disconnect();
+    COUNTDOWN_CLICKS.session = null;
+  }
+}
+
+function stopCountdownClicks() {
+  const session = COUNTDOWN_CLICKS.session;
+
+  if (!audioCtx || !session) return;
+
+  const stopTime = audioCtx.currentTime + 0.008;
+  const gain = session.gain.gain;
+
+  gain.cancelScheduledValues(audioCtx.currentTime);
+  gain.setValueAtTime(Math.max(gain.value, 0.0001), audioCtx.currentTime);
+  gain.exponentialRampToValueAtTime(0.0001, stopTime);
+
+  for (const source of session.activeSources) {
+    try {
+      source.stop(stopTime);
+    } catch (error) {
+      // A fonte pode já ter terminado naturalmente.
+    }
+  }
+
+  COUNTDOWN_CLICKS.session = null;
 }
 
 function updateCountdown() {

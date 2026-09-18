@@ -1243,6 +1243,16 @@ function drawGameOverOverlay() {
 
 const STANDBY_TITLE = "PRESS START";
 
+// O espaço da fonte é estreito de mais para separar as duas
+// palavras, por isso vale por si em vez de letra + letterGap.
+const STANDBY_TITLE_WORD_GAP = 45;
+
+function getStandbyLetterAdvance(letter, letterGap) {
+  return letter === " "
+    ? STANDBY_TITLE_WORD_GAP
+    : textWidth(letter) + letterGap;
+}
+
 // "PRESS" e "START" mudam de cor. Espaços feitos em pixels
 // (o espaço na string não renderizava).
 const STANDBY_PROMPT_PREFIX = "PRESS";
@@ -1278,13 +1288,13 @@ function drawStandbyOverlay() {
   strokeWeight(titleOutlineWeight);
 
   // Folga para o contorno, que textWidth() não mede.
-  const letterGap = titleOutlineWeight * 1.5 + 10;
+  const letterGap = titleOutlineWeight * 1.5 + 5;
 
   const titleY = SCREEN_SIZE.height / 2 - 30;
 
   let totalWidth = -letterGap;
   for (const letter of STANDBY_TITLE) {
-    totalWidth += textWidth(letter) + letterGap;
+    totalWidth += getStandbyLetterAdvance(letter, letterGap);
   }
 
   let x = SCREEN_SIZE.width / 2 - totalWidth / 2;
@@ -1301,7 +1311,7 @@ function drawStandbyOverlay() {
 
     fill(255);
     text(letter, x, titleY);
-    x += textWidth(letter) + letterGap;
+    x += getStandbyLetterAdvance(letter, letterGap);
   }
 
   noStroke();

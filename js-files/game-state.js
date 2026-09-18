@@ -22,6 +22,13 @@ const GAME = {
   // id -> PERFECT / GOOD / OK / MISS / WRONG
   eventResults: new Map(),
 
+  // Batida antecipada numa nota do compasso seguinte (a que está
+  // em t = 0 tem a primeira metade da janela ainda neste
+  // compasso). Guarda-se aqui e aplica-se na viragem, porque os
+  // ids são posicionais e eventResults é limpo ao fim do compasso.
+  // { id, result }
+  pendingEarlyResult: null,
+
   score: 0,
 
   // Pontos da tentativa atual; volta a zero ao perder uma vida.
@@ -194,6 +201,9 @@ function generateBarEvents({ allowNotesOnFirstBeat = true } = {}) {
 // ============================================================
 
 function buildCurrentLevel() {
+  // Partitura nova: a batida antecipada já não tem destino.
+  GAME.pendingEarlyResult = null;
+
   // Primeiro tempo vazio, para dar tempo a ler.
   GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
@@ -233,8 +243,21 @@ function advanceToNextBar() {
   GAME.events = GAME.nextEvents;
   GAME.nextEvents = generateBarEvents();
 
+  // A nota batida antes do compasso virar já está resolvida.
+  applyPendingEarlyResult();
+
   // O preview fica no lugar; o novo nasce do outro lado.
   GAME.activeSide = GAME.activeSide === "left" ? "right" : "left";
+}
+
+// Chamada depois de eventResults ser limpo (ver finishCurrentBar).
+function applyPendingEarlyResult() {
+  const pending = GAME.pendingEarlyResult;
+  GAME.pendingEarlyResult = null;
+
+  if (!pending) return;
+
+  GAME.eventResults.set(pending.id, pending.result);
 }
 
 // ============================================================

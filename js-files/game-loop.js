@@ -158,24 +158,56 @@ function evaluateTiming(differenceMs) {
 
 // ============================================================
 // ENCONTRAR A NOTA NÃO RESOLVIDA MAIS PRÓXIMA
+//
+// Procura-se também no compasso seguinte: a nota em t = 0 tem a
+// primeira metade da janela ainda neste compasso, e sem isto
+// ficava com metade da tolerância das outras.
 // ============================================================
 
 function findClosestUnresolvedEvent(elapsedMs) {
-  let closestEvent = null;
-  let closestDifference = Infinity;
+  let closest = { event: null, difference: Infinity, fromNextBar: false };
+
+  function consider(event, difference, fromNextBar) {
+    if (Math.abs(difference) < Math.abs(closest.difference)) {
+      closest = { event, difference, fromNextBar };
+    }
+  }
 
   for (const event of GAME.events) {
     if (GAME.eventResults.has(event.id)) continue;
 
-    const difference = elapsedMs - getEventTimeMs(event);
-
-    if (Math.abs(difference) < Math.abs(closestDifference)) {
-      closestDifference = difference;
-      closestEvent = event;
-    }
+    consider(event, elapsedMs - getEventTimeMs(event), false);
   }
 
-  return { event: closestEvent, difference: closestDifference };
+  for (const event of GAME.nextEvents) {
+    if (isPendingEarlyResult(event.id)) continue;
+
+    consider(event, elapsedMs - getNextBarEventTimeMs(event), true);
+  }
+
+  return closest;
+}
+
+// Tempo de uma nota do compasso seguinte, no relógio deste
+// compasso: negativo até à viragem.
+function getNextBarEventTimeMs(event) {
+  return getEventTimeMs(event) + getBarDurationMs();
+}
+
+function isPendingEarlyResult(eventId) {
+  return GAME.pendingEarlyResult !== null &&
+    GAME.pendingEarlyResult.id === eventId;
+}
+
+// O compasso seguinte ainda não tem entrada em eventResults
+// (os ids repetem-se de compasso para compasso).
+function resolveEvent(event, fromNextBar, result) {
+  if (fromNextBar) {
+    GAME.pendingEarlyResult = { id: event.id, result };
+    return;
+  }
+
+  GAME.eventResults.set(event.id, result);
 }
 
 // ============================================================
@@ -194,6 +226,14 @@ function isNearResolvedEvent(elapsedMs, okWindow) {
     }
   }
 
+  for (const event of GAME.nextEvents) {
+    if (!isPendingEarlyResult(event.id)) continue;
+
+    if (Math.abs(elapsedMs - getNextBarEventTimeMs(event)) <= okWindow) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -207,7 +247,11 @@ function tryLaneHit(lane) {
   const elapsedMs = getCurrentElapsedMs();
   const okWindow = getCurrentLevelConfig().hitWindows.ok;
 
-  const { event: closestEvent, difference: closestDifference } = findClosestUnresolvedEvent(elapsedMs);
+  const {
+    event: closestEvent,
+    difference: closestDifference,
+    fromNextBar
+  } = findClosestUnresolvedEvent(elapsedMs);
 
   // Nenhuma nota perto: pune "button mashing".
   if (!closestEvent || Math.abs(closestDifference) > okWindow) {
@@ -223,7 +267,7 @@ function tryLaneHit(lane) {
   // ==========================================================
 
   if (closestEvent.lane !== lane) {
-    GAME.eventResults.set(closestEvent.id, "WRONG");
+    resolveEvent(closestEvent, fromNextBar, "WRONG");
     registerFailure("wrong");
     return;
   }
@@ -233,7 +277,7 @@ function tryLaneHit(lane) {
   // ==========================================================
 
   const judgement = evaluateTiming(closestDifference);
-  GAME.eventResults.set(closestEvent.id, judgement);
+  resolveEvent(closestEvent, fromNextBar, judgement);
 
   registerSuccessfulHit(closestEvent, judgement);
 }

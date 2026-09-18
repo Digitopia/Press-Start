@@ -390,6 +390,10 @@ function updateGameOver() {
 function beginCountdown(state, extraDelaySeconds = 0) {
   stopCountdownClicks();
 
+  // Countdown, mudança de nível e vida perdida: o ecrã já
+  // anuncia a transição, o julgamento anterior sai.
+  clearJudgement();
+
   GAME.state = state;
 
   GAME.countdownStartAudioTime =

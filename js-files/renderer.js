@@ -1160,7 +1160,7 @@ function drawGameOverOverlay() {
 // Título branco com contorno nas cores das filas.
 // ============================================================
 
-const STANDBY_TITLE = "TITULO TBD";
+const STANDBY_TITLE = "PRESS START";
 
 // "PRESS" e "START" mudam de cor. Espaços feitos em pixels
 // (o espaço na string não renderizava).

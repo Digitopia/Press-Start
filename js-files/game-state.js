@@ -113,6 +113,19 @@ function getLevelTargetScore(level) {
 }
 
 // ============================================================
+// FEEDBACK DE JULGAMENTO
+//
+// judgementTimer só corre em "playing", por isso um julgamento
+// apanhado por uma transição ficaria no ecrã e voltaria a
+// aparecer ao retomar. Limpa-se ao sair do jogo.
+// ============================================================
+
+function clearJudgement() {
+  GAME.lastJudgement = "";
+  GAME.judgementTimer = 0;
+}
+
+// ============================================================
 // VIDA / HEALTH
 // ============================================================
 
@@ -149,16 +162,15 @@ function loseLife() {
     GAME.state = "gameover";
     GAME.gameOverStartFrame = frameCount;
 
+    // O overlay já anuncia o fim.
+    clearJudgement();
+
     playPlayerGameOver()
     return;
   }
 
   // Ainda há vidas: a barra volta a encher e o jogo continua.
   GAME.health = HEALTH.max;
-
-  // O overlay já anuncia a perda: limpar o feedback.
-  GAME.lastJudgement = "";
-  GAME.judgementTimer = 0;
 
   playPlayerLifeLost();
 
@@ -291,8 +303,7 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.nextLevelBarsPending = false;
   GAME.nextLevelAudioTime = null;
 
-  GAME.lastJudgement = "";
-  GAME.judgementTimer = 0;
+  clearJudgement();
 
   GAME.barStartAudioTime = null;
 

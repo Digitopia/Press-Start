@@ -41,18 +41,34 @@ function getMetronomeFade(level) {
   return 1 - (level - 1) / lastAudibleLevel;
 }
 
+// Até onde se pode agendar. Com a subida de nível decidida, o
+// compasso seguinte vai ser deitado fora: nem o seu tempo forte
+// nem a sua música chegam a ser agendados.
+function getScheduleLimitTime() {
+  const limit = audioCtx.currentTime + MUSIC.scheduleAheadSeconds;
+
+  if (!GAME.levelChangePending || GAME.barStartAudioTime === null) {
+    return limit;
+  }
+
+  const barEndTime =
+    GAME.barStartAudioTime + getBarDurationMs() / 1000;
+
+  return Math.min(limit, barEndTime);
+}
+
 function updateClickTransport() {
   if (CLICK_TRANSPORT.nextBeatTime === null || !audioCtx) return;
 
   const config = getCurrentLevelConfig();
   const beatDurationSeconds = 60 / config.bpm;
-  const scheduleLimit =
-    audioCtx.currentTime + MUSIC.scheduleAheadSeconds;
+  const scheduleLimit = getScheduleLimitTime();
 
   const fade = getMetronomeFade(GAME.level);
 
-  // while: uma frame atrasada não perde clicks.
-  while (CLICK_TRANSPORT.nextBeatTime <= scheduleLimit) {
+  // while: uma frame atrasada não perde clicks. O limite é
+  // exclusivo, senão o tempo forte na fronteira entrava.
+  while (CLICK_TRANSPORT.nextBeatTime < scheduleLimit) {
     const isDownbeat =
       CLICK_TRANSPORT.beatIndex % config.beatsPerBar === 0;
 
@@ -376,10 +392,9 @@ function stopMusicTransport() {
 function updateMusicTransport() {
   if (!MUSIC_TRANSPORT.playing || !audioCtx) return;
 
-  const scheduleLimit =
-    audioCtx.currentTime + MUSIC.scheduleAheadSeconds;
+  const scheduleLimit = getScheduleLimitTime();
 
-  while (MUSIC_TRANSPORT.nextBarTime <= scheduleLimit) {
+  while (MUSIC_TRANSPORT.nextBarTime < scheduleLimit) {
     const config = getCurrentLevelConfig();
     const barDurationSeconds =
       (60 / config.bpm) * config.beatsPerBar;

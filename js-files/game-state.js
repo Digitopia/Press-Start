@@ -57,6 +57,15 @@ const GAME = {
   // Compasso do nível novo à espera do corte para preto.
   nextLevelBarsPending: false,
 
+  // Subida de nível decidida no último beat do compasso, para
+  // nada do compasso seguinte atravessar a fronteira.
+  levelChangePending: false,
+
+  // Compasso em que essa decisão já foi tomada (uma vez por
+  // compasso: passar o alvo a meio do último beat espera pelo
+  // compasso seguinte).
+  levelDecisionBar: null,
+
   // Instante em que a transição de nível começou (fade).
   nextLevelAudioTime: null,
 
@@ -216,6 +225,11 @@ function buildCurrentLevel() {
   // Partitura nova: a batida antecipada já não tem destino.
   GAME.pendingEarlyResult = null;
 
+  // Uma subida decidida e não consumida (vida perdida a meio do
+  // último beat) morre aqui.
+  GAME.levelChangePending = false;
+  GAME.levelDecisionBar = null;
+
   // Primeiro tempo vazio, para dar tempo a ler.
   GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
@@ -371,29 +385,23 @@ function handChangeLevel(newLevel) {
   resetGame({ keepLevel: true });
 }
 
-// automaticamente
+// automaticamente, no fim do compasso — a decisão em si foi
+// tomada um beat antes, por checkPendingLevelChange().
 function changeLevel() {
+  if (!GAME.levelChangePending) return false;
 
-  if (GAME.levelScore >= GAME.levelTargetScore) {
+  GAME.levelChangePending = false;
 
-    // se já está no último nível — não há mais para onde subir
-    if (GAME.level >= LEVEL_CONFIGS.length) return false;
+  stopMusicTransport();
 
-    stopMusicTransport();
+  GAME.level = GAME.level + 1;
 
-    const newLevel = GAME.level + 1
-    const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
-    GAME.level = nextLevel;
+  console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
 
-    console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
+  // O nível muda já, para a contagem sair no bpm novo; o resto
+  // do estado só se aplica no corte (beginNextLevelBar()).
+  GAME.nextLevelAudioTime = audioCtx.currentTime;
+  beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
 
-    // O nível muda já, para a contagem sair no bpm novo; o resto
-    // do estado só se aplica no corte (beginNextLevelBar()).
-    GAME.nextLevelAudioTime = audioCtx.currentTime;
-    beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
-
-    return true;
-  }
-
-  return false;
+  return true;
 }

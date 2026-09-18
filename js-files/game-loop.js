@@ -52,6 +52,9 @@ function updateGame() {
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
+  // Antes de agendar: o que está decidido trava o agendamento.
+  checkPendingLevelChange(elapsed, durationSeconds);
+
   // Agenda música e metrónomo com antecedência.
   updateMusicTransport();
 
@@ -62,6 +65,45 @@ function updateGame() {
   if (GAME.judgementTimer > 0) {
     GAME.judgementTimer -= deltaTime;
   }
+}
+
+// ============================================================
+// SUBIDA DE NÍVEL — DECISÃO ANTECIPADA
+//
+// Decidida um pouco antes da fronteira, e não em cima dela: a
+// partir daí nada do compasso seguinte é agendado nem pode ser
+// tocado, porque esse compasso vai ser deitado fora.
+//
+// A antecipação é a mínima que fecha as duas fugas, para os
+// pontos da última nota ainda contarem: ela está a uma
+// subdivisão da fronteira (250 ms no nível 1, 178 ms no 10) e a
+// decisão cai depois disso.
+// ============================================================
+
+// Margem para a frame da decisão chegar antes do agendamento.
+const LEVEL_DECISION_MARGIN_MS = 50;
+
+function getLevelDecisionLeadMs() {
+  const okWindow = getCurrentLevelConfig().hitWindows.ok;
+  const scheduleAheadMs = MUSIC.scheduleAheadSeconds * 1000;
+
+  return Math.max(okWindow, scheduleAheadMs) + LEVEL_DECISION_MARGIN_MS;
+}
+
+function checkPendingLevelChange(elapsed, durationSeconds) {
+  // Uma decisão por compasso.
+  if (GAME.levelDecisionBar === GAME.barNumber) return;
+
+  const leadSeconds = getLevelDecisionLeadMs() / 1000;
+
+  if (elapsed < durationSeconds - leadSeconds) return;
+
+  GAME.levelDecisionBar = GAME.barNumber;
+
+  // Do último nível não se sobe.
+  if (GAME.level >= LEVEL_CONFIGS.length) return;
+
+  GAME.levelChangePending = GAME.levelScore >= GAME.levelTargetScore;
 }
 
 // ============================================================
@@ -261,6 +303,16 @@ function tryLaneHit(lane) {
     registerFailure("stray");
     return;
   }
+
+  // ==========================================================
+  // NOTA DE UM COMPASSO QUE NÃO VAI CHEGAR A TOCAR
+  //
+  // A subida de nível já está decidida. A nota é vista no
+  // preview, por isso antecipá-la não se pune — mas também não
+  // conta, que seria pontuar uma nota que nunca soou.
+  // ==========================================================
+
+  if (fromNextBar && GAME.levelChangePending) return;
 
   // ==========================================================
   // TEMPO CERTO, FILA ERRADA

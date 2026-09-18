@@ -22,6 +22,13 @@ const GAME = {
   // id -> PERFECT / GOOD / OK / MISS / WRONG
   eventResults: new Map(),
 
+  // Batida antecipada numa nota do compasso seguinte (a que está
+  // em t = 0 tem a primeira metade da janela ainda neste
+  // compasso). Guarda-se aqui e aplica-se na viragem, porque os
+  // ids são posicionais e eventResults é limpo ao fim do compasso.
+  // { id, result }
+  pendingEarlyResult: null,
+
   score: 0,
 
   // Pontos da tentativa atual; volta a zero ao perder uma vida.
@@ -49,6 +56,15 @@ const GAME = {
 
   // Compasso do nível novo à espera do corte para preto.
   nextLevelBarsPending: false,
+
+  // Subida de nível decidida no último beat do compasso, para
+  // nada do compasso seguinte atravessar a fronteira.
+  levelChangePending: false,
+
+  // Compasso em que essa decisão já foi tomada (uma vez por
+  // compasso: passar o alvo a meio do último beat espera pelo
+  // compasso seguinte).
+  levelDecisionBar: null,
 
   // Instante em que a transição de nível começou (fade).
   nextLevelAudioTime: null,
@@ -106,6 +122,19 @@ function getLevelTargetScore(level) {
 }
 
 // ============================================================
+// FEEDBACK DE JULGAMENTO
+//
+// judgementTimer só corre em "playing", por isso um julgamento
+// apanhado por uma transição ficaria no ecrã e voltaria a
+// aparecer ao retomar. Limpa-se ao sair do jogo.
+// ============================================================
+
+function clearJudgement() {
+  GAME.lastJudgement = "";
+  GAME.judgementTimer = 0;
+}
+
+// ============================================================
 // VIDA / HEALTH
 // ============================================================
 
@@ -142,16 +171,15 @@ function loseLife() {
     GAME.state = "gameover";
     GAME.gameOverStartFrame = frameCount;
 
+    // O overlay já anuncia o fim.
+    clearJudgement();
+
     playPlayerGameOver()
     return;
   }
 
   // Ainda há vidas: a barra volta a encher e o jogo continua.
   GAME.health = HEALTH.max;
-
-  // O overlay já anuncia a perda: limpar o feedback.
-  GAME.lastJudgement = "";
-  GAME.judgementTimer = 0;
 
   playPlayerLifeLost();
 
@@ -194,6 +222,14 @@ function generateBarEvents({ allowNotesOnFirstBeat = true } = {}) {
 // ============================================================
 
 function buildCurrentLevel() {
+  // Partitura nova: a batida antecipada já não tem destino.
+  GAME.pendingEarlyResult = null;
+
+  // Uma subida decidida e não consumida (vida perdida a meio do
+  // último beat) morre aqui.
+  GAME.levelChangePending = false;
+  GAME.levelDecisionBar = null;
+
   // Primeiro tempo vazio, para dar tempo a ler.
   GAME.events = generateBarEvents({ allowNotesOnFirstBeat: false });
   GAME.nextEvents = generateBarEvents();
@@ -233,8 +269,21 @@ function advanceToNextBar() {
   GAME.events = GAME.nextEvents;
   GAME.nextEvents = generateBarEvents();
 
+  // A nota batida antes do compasso virar já está resolvida.
+  applyPendingEarlyResult();
+
   // O preview fica no lugar; o novo nasce do outro lado.
   GAME.activeSide = GAME.activeSide === "left" ? "right" : "left";
+}
+
+// Chamada depois de eventResults ser limpo (ver finishCurrentBar).
+function applyPendingEarlyResult() {
+  const pending = GAME.pendingEarlyResult;
+  GAME.pendingEarlyResult = null;
+
+  if (!pending) return;
+
+  GAME.eventResults.set(pending.id, pending.result);
 }
 
 // ============================================================
@@ -268,8 +317,7 @@ function resetGame({ keepLevel = false } = {}) {
   GAME.nextLevelBarsPending = false;
   GAME.nextLevelAudioTime = null;
 
-  GAME.lastJudgement = "";
-  GAME.judgementTimer = 0;
+  clearJudgement();
 
   GAME.barStartAudioTime = null;
 
@@ -337,29 +385,23 @@ function handChangeLevel(newLevel) {
   resetGame({ keepLevel: true });
 }
 
-// automaticamente
+// automaticamente, no fim do compasso — a decisão em si foi
+// tomada um beat antes, por checkPendingLevelChange().
 function changeLevel() {
+  if (!GAME.levelChangePending) return false;
 
-  if (GAME.levelScore >= GAME.levelTargetScore) {
+  GAME.levelChangePending = false;
 
-    // se já está no último nível — não há mais para onde subir
-    if (GAME.level >= LEVEL_CONFIGS.length) return false;
+  stopMusicTransport();
 
-    stopMusicTransport();
+  GAME.level = GAME.level + 1;
 
-    const newLevel = GAME.level + 1
-    const nextLevel = constrain(newLevel, 1, LEVEL_CONFIGS.length);
-    GAME.level = nextLevel;
+  console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
 
-    console.log(`Level ${GAME.level}. Earn ${getLevelTargetScore(GAME.level)} points to advance.`)
+  // O nível muda já, para a contagem sair no bpm novo; o resto
+  // do estado só se aplica no corte (beginNextLevelBar()).
+  GAME.nextLevelAudioTime = audioCtx.currentTime;
+  beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
 
-    // O nível muda já, para a contagem sair no bpm novo; o resto
-    // do estado só se aplica no corte (beginNextLevelBar()).
-    GAME.nextLevelAudioTime = audioCtx.currentTime;
-    beginCountdown("nextlevel", NEXT_LEVEL_TRANSITION.durationSeconds);
-
-    return true;
-  }
-
-  return false;
+  return true;
 }

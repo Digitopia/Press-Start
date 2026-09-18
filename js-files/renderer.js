@@ -83,7 +83,7 @@ function drawScore(
   const config = getCurrentLevelConfig();
 
   if (isActive ? config.showScorePath : config.showPreviewPath) {
-    drawScorePath(area, events);
+    drawScorePath(area, events, isActive);
   } else if (isActive && config.showScoreTrail) {
     // Sem linha à frente, fica o rasto atrás.
     drawScoreTrail(area, events);
@@ -319,7 +319,8 @@ function getScorePathPoints(
 
 function drawScorePath(
   area,
-  events
+  events,
+  isActive
 ) {
   const points =
     getScorePathPoints(
@@ -327,9 +328,25 @@ function drawScorePath(
       events
     );
 
-  stroke(75);
   strokeWeight(2);
   noFill();
+  stroke(SCORE_PATH.ahead);
+
+  // O preview não tem bola: mostra o caminho todo.
+  if (!isActive) {
+    drawPolyline(points);
+    return;
+  }
+
+  // Só o que falta percorrer; atrás da bola fica o rasto.
+  drawPolyline(getPathPointsFrom(points, GAME.ballPosition));
+
+  // A cor do rasto vem do gradiente, não de stroke().
+  drawFadingPath(points, GAME.ballPosition);
+}
+
+function drawPolyline(points) {
+  if (points.length < 2) return;
 
   beginShape();
 
@@ -343,49 +360,113 @@ function drawScorePath(
   endShape();
 }
 
+// Percurso até t, com o ponto da bola a fechar.
+function getPathPointsUpTo(points, t) {
+  const head = getPointOnTimedPath(points, t);
+  const travelled = points.filter(point => point.t <= t);
+
+  travelled.push({ t, x: head.x, y: head.y });
+
+  return travelled;
+}
+
+// Percurso a partir de t, com o ponto da bola a abrir.
+function getPathPointsFrom(points, t) {
+  const head = getPointOnTimedPath(points, t);
+  const remaining = points.filter(point => point.t > t);
+
+  remaining.unshift({ t, x: head.x, y: head.y });
+
+  return remaining;
+}
+
+// ============================================================
+// DESENHO — O QUE A BOLA JÁ PERCORREU
+//
+// A opacidade vem de há quantos tempos cada ponto ficou para
+// trás (trailFadeBeats, null = fica). Cada segmento leva um
+// gradiente entre as opacidades das duas pontas: com um valor
+// só por segmento, o rasto partia-se aos degraus nas notas.
+// Igual com e sem linha à frente: atrás da bola é sempre rasto.
+// ============================================================
+
+// Sobe-o para o caminho já andado continuar a ler-se.
+const TRAIL_MIN_OPACITY = 0;
+
+function getTrailOpacity(ballT, pointT) {
+  const config = getCurrentLevelConfig();
+
+  if (config.trailFadeBeats === null) return 1;
+
+  const beatsBehind = (ballT - pointT) * config.beatsPerBar;
+
+  return constrain(
+    1 - beatsBehind / config.trailFadeBeats,
+    TRAIL_MIN_OPACITY,
+    1
+  );
+}
+
+// Lido uma vez: aceita cinzento ou [r, g, b] na config.
+function getLitRGB() {
+  const lit = color(SCORE_PATH.lit);
+
+  return [red(lit), green(lit), blue(lit)];
+}
+
+function drawFadingPath(points, ballT) {
+  const travelled = getPathPointsUpTo(points, ballT);
+
+  if (travelled.length < 2) return;
+
+  // strokeWeight() e o alpha do preview vêm de quem chama.
+  const context = drawingContext;
+  const [r, g, b] = getLitRGB();
+
+  const litWithOpacity = opacity => `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
+  for (let index = 0; index < travelled.length - 1; index++) {
+    const start = travelled[index];
+    const end = travelled[index + 1];
+
+    // A bola em cima de uma nota dá um segmento sem comprimento.
+    if (start.x === end.x && start.y === end.y) continue;
+
+    const startOpacity = getTrailOpacity(ballT, start.t);
+    const endOpacity = getTrailOpacity(ballT, end.t);
+
+    if (startOpacity <= 0 && endOpacity <= 0) continue;
+
+    const gradient = context.createLinearGradient(
+      start.x,
+      start.y,
+      end.x,
+      end.y
+    );
+
+    gradient.addColorStop(0, litWithOpacity(startOpacity));
+    gradient.addColorStop(1, litWithOpacity(endOpacity));
+
+    context.strokeStyle = gradient;
+
+    context.beginPath();
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+  }
+}
+
 // ============================================================
 // DESENHO — RASTO
-//
-// O percurso até à bola, segmento a segmento, cada um com
-// opacidade conforme há quantos tempos ficou para trás.
 // ============================================================
 
 function drawScoreTrail(area, events) {
-  const config = getCurrentLevelConfig();
   const points = getScorePathPoints(area, events);
-  const ballT = GAME.ballPosition;
-
-  const head = getPointOnTimedPath(points, ballT);
-
-  const trail = points.filter(point => point.t <= ballT);
-  trail.push({ t: ballT, x: head.x, y: head.y });
-
-  if (trail.length < 2) return;
-
-  const baseAlpha = drawingContext.globalAlpha;
 
   strokeWeight(2);
   noFill();
 
-  for (let index = 0; index < trail.length - 1; index++) {
-    const start = trail[index];
-    const end = trail[index + 1];
-
-    let opacity = 1;
-
-    if (config.trailFadeBeats !== null) {
-      const beatsBehind = (ballT - start.t) * config.beatsPerBar;
-      opacity = constrain(1 - beatsBehind / config.trailFadeBeats, 0.25, 1);
-    }
-
-    if (opacity <= 0) continue;
-
-    drawingContext.globalAlpha = baseAlpha * opacity;
-    stroke(75);
-    line(start.x, start.y, end.x, end.y);
-  }
-
-  drawingContext.globalAlpha = baseAlpha;
+  drawFadingPath(points, GAME.ballPosition);
 }
 
 // ============================================================
@@ -1160,14 +1241,40 @@ function drawGameOverOverlay() {
 // Título branco com contorno nas cores das filas.
 // ============================================================
 
-const STANDBY_TITLE = "TITULO TBD";
+const STANDBY_TITLE = "PRESS START";
+
+// O espaço da fonte é estreito de mais para separar as duas
+// palavras, por isso vale por si em vez de letra + letterGap.
+const STANDBY_TITLE_WORD_GAP = 45;
+
+// A fonte é monoespaçada: o avanço é igual para todas as letras,
+// mas a tinta não. O T ocupa a largura toda só na barra de cima
+// e por isso abre um buraco que as outras não abrem. Aperta-se
+// à mão, letra a letra, em pixels.
+const STANDBY_TITLE_KERNING = { T: -10 };
+
+function getStandbyKerning(letter) {
+  return STANDBY_TITLE_KERNING[letter] ?? 0;
+}
+
+function getStandbyLetterAdvance(letter, letterGap) {
+  return letter === " "
+    ? STANDBY_TITLE_WORD_GAP
+    : textWidth(letter) + letterGap;
+}
 
 // "PRESS" e "START" mudam de cor. Espaços feitos em pixels
 // (o espaço na string não renderizava).
 const STANDBY_PROMPT_PREFIX = "PRESS";
 const STANDBY_PROMPT_MIDDLE = "ANY BUTTON TO";
 const STANDBY_PROMPT_SUFFIX = "START";
-const STANDBY_PROMPT_GAP = 10;
+
+// A junção entre blocos vale o mesmo que um espaço da frase,
+// senão ficava mais apertada do que os espaços de "ANY BUTTON
+// TO". textWidth(" ") sozinho vem a zero: mede-se por diferença.
+function getSpaceWidth() {
+  return textWidth("A A") - textWidth("AA");
+}
 
 // Ciclo: branco, pisca, vermelho, pisca. O contorno do título
 // só aparece na fase branca.
@@ -1197,13 +1304,14 @@ function drawStandbyOverlay() {
   strokeWeight(titleOutlineWeight);
 
   // Folga para o contorno, que textWidth() não mede.
-  const letterGap = titleOutlineWeight * 1.5 + 10;
+  const letterGap = titleOutlineWeight * 1.5 + 5;
 
   const titleY = SCREEN_SIZE.height / 2 - 30;
 
   let totalWidth = -letterGap;
   for (const letter of STANDBY_TITLE) {
-    totalWidth += textWidth(letter) + letterGap;
+    totalWidth +=
+      getStandbyKerning(letter) + getStandbyLetterAdvance(letter, letterGap);
   }
 
   let x = SCREEN_SIZE.width / 2 - totalWidth / 2;
@@ -1218,9 +1326,12 @@ function drawStandbyOverlay() {
       noStroke();
     }
 
+    // O acerto vem antes: encosta esta letra à anterior.
+    x += getStandbyKerning(letter);
+
     fill(255);
     text(letter, x, titleY);
-    x += textWidth(letter) + letterGap;
+    x += getStandbyLetterAdvance(letter, letterGap);
   }
 
   noStroke();
@@ -1232,8 +1343,10 @@ function drawStandbyOverlay() {
     const accentColor = inRedHold ? [255, 70, 70] : [255, 255, 255];
 
     const middleWidth = textWidth(STANDBY_PROMPT_MIDDLE);
-    const leftEdge = SCREEN_SIZE.width / 2 - middleWidth / 2 - STANDBY_PROMPT_GAP;
-    const rightEdge = SCREEN_SIZE.width / 2 + middleWidth / 2 + STANDBY_PROMPT_GAP;
+    const promptGap = getSpaceWidth();
+
+    const leftEdge = SCREEN_SIZE.width / 2 - middleWidth / 2 - promptGap;
+    const rightEdge = SCREEN_SIZE.width / 2 + middleWidth / 2 + promptGap;
 
     textAlign(CENTER, CENTER);
     fill(255);

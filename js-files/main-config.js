@@ -49,6 +49,18 @@ const SCORE_LAYOUT = {
 };
 
 // ============================================================
+// LINHA DA PARTITURA
+//
+// O que falta percorrer fica escuro e acende à passagem da
+// bola. O rasto (níveis sem linha) usa a mesma cor acesa.
+// ============================================================
+
+const SCORE_PATH = {
+  ahead: 80,
+  lit: 220
+};
+
+// ============================================================
 // JANELAS DE ACERTO
 //
 // Fração do menor intervalo rítmico do nível, limitada a maxMs.

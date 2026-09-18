@@ -52,6 +52,9 @@ function updateGame() {
     elapsed = audioCtx.currentTime - GAME.barStartAudioTime;
   }
 
+  // Antes de agendar: o que está decidido trava o agendamento.
+  checkPendingLevelChange(elapsed, durationSeconds);
+
   // Agenda música e metrónomo com antecedência.
   updateMusicTransport();
 
@@ -62,6 +65,45 @@ function updateGame() {
   if (GAME.judgementTimer > 0) {
     GAME.judgementTimer -= deltaTime;
   }
+}
+
+// ============================================================
+// SUBIDA DE NÍVEL — DECISÃO ANTECIPADA
+//
+// Decidida um pouco antes da fronteira, e não em cima dela: a
+// partir daí nada do compasso seguinte é agendado nem pode ser
+// tocado, porque esse compasso vai ser deitado fora.
+//
+// A antecipação é a mínima que fecha as duas fugas, para os
+// pontos da última nota ainda contarem: ela está a uma
+// subdivisão da fronteira (250 ms no nível 1, 178 ms no 10) e a
+// decisão cai depois disso.
+// ============================================================
+
+// Margem para a frame da decisão chegar antes do agendamento.
+const LEVEL_DECISION_MARGIN_MS = 50;
+
+function getLevelDecisionLeadMs() {
+  const okWindow = getCurrentLevelConfig().hitWindows.ok;
+  const scheduleAheadMs = MUSIC.scheduleAheadSeconds * 1000;
+
+  return Math.max(okWindow, scheduleAheadMs) + LEVEL_DECISION_MARGIN_MS;
+}
+
+function checkPendingLevelChange(elapsed, durationSeconds) {
+  // Uma decisão por compasso.
+  if (GAME.levelDecisionBar === GAME.barNumber) return;
+
+  const leadSeconds = getLevelDecisionLeadMs() / 1000;
+
+  if (elapsed < durationSeconds - leadSeconds) return;
+
+  GAME.levelDecisionBar = GAME.barNumber;
+
+  // Do último nível não se sobe.
+  if (GAME.level >= LEVEL_CONFIGS.length) return;
+
+  GAME.levelChangePending = GAME.levelScore >= GAME.levelTargetScore;
 }
 
 // ============================================================
@@ -158,24 +200,56 @@ function evaluateTiming(differenceMs) {
 
 // ============================================================
 // ENCONTRAR A NOTA NÃO RESOLVIDA MAIS PRÓXIMA
+//
+// Procura-se também no compasso seguinte: a nota em t = 0 tem a
+// primeira metade da janela ainda neste compasso, e sem isto
+// ficava com metade da tolerância das outras.
 // ============================================================
 
 function findClosestUnresolvedEvent(elapsedMs) {
-  let closestEvent = null;
-  let closestDifference = Infinity;
+  let closest = { event: null, difference: Infinity, fromNextBar: false };
+
+  function consider(event, difference, fromNextBar) {
+    if (Math.abs(difference) < Math.abs(closest.difference)) {
+      closest = { event, difference, fromNextBar };
+    }
+  }
 
   for (const event of GAME.events) {
     if (GAME.eventResults.has(event.id)) continue;
 
-    const difference = elapsedMs - getEventTimeMs(event);
-
-    if (Math.abs(difference) < Math.abs(closestDifference)) {
-      closestDifference = difference;
-      closestEvent = event;
-    }
+    consider(event, elapsedMs - getEventTimeMs(event), false);
   }
 
-  return { event: closestEvent, difference: closestDifference };
+  for (const event of GAME.nextEvents) {
+    if (isPendingEarlyResult(event.id)) continue;
+
+    consider(event, elapsedMs - getNextBarEventTimeMs(event), true);
+  }
+
+  return closest;
+}
+
+// Tempo de uma nota do compasso seguinte, no relógio deste
+// compasso: negativo até à viragem.
+function getNextBarEventTimeMs(event) {
+  return getEventTimeMs(event) + getBarDurationMs();
+}
+
+function isPendingEarlyResult(eventId) {
+  return GAME.pendingEarlyResult !== null &&
+    GAME.pendingEarlyResult.id === eventId;
+}
+
+// O compasso seguinte ainda não tem entrada em eventResults
+// (os ids repetem-se de compasso para compasso).
+function resolveEvent(event, fromNextBar, result) {
+  if (fromNextBar) {
+    GAME.pendingEarlyResult = { id: event.id, result };
+    return;
+  }
+
+  GAME.eventResults.set(event.id, result);
 }
 
 // ============================================================
@@ -194,6 +268,14 @@ function isNearResolvedEvent(elapsedMs, okWindow) {
     }
   }
 
+  for (const event of GAME.nextEvents) {
+    if (!isPendingEarlyResult(event.id)) continue;
+
+    if (Math.abs(elapsedMs - getNextBarEventTimeMs(event)) <= okWindow) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -207,7 +289,11 @@ function tryLaneHit(lane) {
   const elapsedMs = getCurrentElapsedMs();
   const okWindow = getCurrentLevelConfig().hitWindows.ok;
 
-  const { event: closestEvent, difference: closestDifference } = findClosestUnresolvedEvent(elapsedMs);
+  const {
+    event: closestEvent,
+    difference: closestDifference,
+    fromNextBar
+  } = findClosestUnresolvedEvent(elapsedMs);
 
   // Nenhuma nota perto: pune "button mashing".
   if (!closestEvent || Math.abs(closestDifference) > okWindow) {
@@ -219,11 +305,21 @@ function tryLaneHit(lane) {
   }
 
   // ==========================================================
+  // NOTA DE UM COMPASSO QUE NÃO VAI CHEGAR A TOCAR
+  //
+  // A subida de nível já está decidida. A nota é vista no
+  // preview, por isso antecipá-la não se pune — mas também não
+  // conta, que seria pontuar uma nota que nunca soou.
+  // ==========================================================
+
+  if (fromNextBar && GAME.levelChangePending) return;
+
+  // ==========================================================
   // TEMPO CERTO, FILA ERRADA
   // ==========================================================
 
   if (closestEvent.lane !== lane) {
-    GAME.eventResults.set(closestEvent.id, "WRONG");
+    resolveEvent(closestEvent, fromNextBar, "WRONG");
     registerFailure("wrong");
     return;
   }
@@ -233,7 +329,7 @@ function tryLaneHit(lane) {
   // ==========================================================
 
   const judgement = evaluateTiming(closestDifference);
-  GAME.eventResults.set(closestEvent.id, judgement);
+  resolveEvent(closestEvent, fromNextBar, judgement);
 
   registerSuccessfulHit(closestEvent, judgement);
 }
@@ -345,6 +441,10 @@ function updateGameOver() {
 // do overlay. ballPosition e combo são repostos pelo chamador.
 function beginCountdown(state, extraDelaySeconds = 0) {
   stopCountdownClicks();
+
+  // Countdown, mudança de nível e vida perdida: o ecrã já
+  // anuncia a transição, o julgamento anterior sai.
+  clearJudgement();
 
   GAME.state = state;
 

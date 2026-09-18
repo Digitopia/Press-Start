@@ -1268,7 +1268,13 @@ function getStandbyLetterAdvance(letter, letterGap) {
 const STANDBY_PROMPT_PREFIX = "PRESS";
 const STANDBY_PROMPT_MIDDLE = "ANY BUTTON TO";
 const STANDBY_PROMPT_SUFFIX = "START";
-const STANDBY_PROMPT_GAP = 10;
+
+// A junção entre blocos vale o mesmo que um espaço da frase,
+// senão ficava mais apertada do que os espaços de "ANY BUTTON
+// TO". textWidth(" ") sozinho vem a zero: mede-se por diferença.
+function getSpaceWidth() {
+  return textWidth("A A") - textWidth("AA");
+}
 
 // Ciclo: branco, pisca, vermelho, pisca. O contorno do título
 // só aparece na fase branca.
@@ -1337,8 +1343,10 @@ function drawStandbyOverlay() {
     const accentColor = inRedHold ? [255, 70, 70] : [255, 255, 255];
 
     const middleWidth = textWidth(STANDBY_PROMPT_MIDDLE);
-    const leftEdge = SCREEN_SIZE.width / 2 - middleWidth / 2 - STANDBY_PROMPT_GAP;
-    const rightEdge = SCREEN_SIZE.width / 2 + middleWidth / 2 + STANDBY_PROMPT_GAP;
+    const promptGap = getSpaceWidth();
+
+    const leftEdge = SCREEN_SIZE.width / 2 - middleWidth / 2 - promptGap;
+    const rightEdge = SCREEN_SIZE.width / 2 + middleWidth / 2 + promptGap;
 
     textAlign(CENTER, CENTER);
     fill(255);

@@ -1247,6 +1247,16 @@ const STANDBY_TITLE = "PRESS START";
 // palavras, por isso vale por si em vez de letra + letterGap.
 const STANDBY_TITLE_WORD_GAP = 45;
 
+// A fonte é monoespaçada: o avanço é igual para todas as letras,
+// mas a tinta não. O T ocupa a largura toda só na barra de cima
+// e por isso abre um buraco que as outras não abrem. Aperta-se
+// à mão, letra a letra, em pixels.
+const STANDBY_TITLE_KERNING = { T: -10 };
+
+function getStandbyKerning(letter) {
+  return STANDBY_TITLE_KERNING[letter] ?? 0;
+}
+
 function getStandbyLetterAdvance(letter, letterGap) {
   return letter === " "
     ? STANDBY_TITLE_WORD_GAP
@@ -1294,7 +1304,8 @@ function drawStandbyOverlay() {
 
   let totalWidth = -letterGap;
   for (const letter of STANDBY_TITLE) {
-    totalWidth += getStandbyLetterAdvance(letter, letterGap);
+    totalWidth +=
+      getStandbyKerning(letter) + getStandbyLetterAdvance(letter, letterGap);
   }
 
   let x = SCREEN_SIZE.width / 2 - totalWidth / 2;
@@ -1308,6 +1319,9 @@ function drawStandbyOverlay() {
     } else {
       noStroke();
     }
+
+    // O acerto vem antes: encosta esta letra à anterior.
+    x += getStandbyKerning(letter);
 
     fill(255);
     text(letter, x, titleY);

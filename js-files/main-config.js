@@ -358,13 +358,39 @@ const LANES = {
 // ============================================================
 // CONFIGURAÇÃO MIDI
 //
-// Liga o Spectra, carrega nos 16 botões e copia da consola
-// os 4 números MIDI de cada fila.
+// Mapeamento standard do Bank 1 do MIDI Fighter Spectra,
+// da fila superior para a inferior.
 // ============================================================
 
-const MIDI_ROW_NOTES = { blue: [], green: [], yellow: [], red: [] };
+const MIDI_ROW_NOTES = {
+  blue: [48, 49, 50, 51],
+  green: [44, 45, 46, 47],
+  yellow: [40, 41, 42, 43],
+  red: [36, 37, 38, 39]
+};
 
-const MIDI = { access: null, input: null };
+// O Spectra escolhe a cor através da velocity. Estes valores
+// aproximam as cores do jogo; podem ser afinados por firmware.
+const MIDI_LED_COLOR_VELOCITIES = {
+  blue: 87,
+  green: 63,
+  yellow: 39,
+  red: 111
+};
+
+const MIDI_SPECTRA = {
+  deviceName: "midi fighter",
+
+  // Canais humanos; sendMIDINote() converte para 0–15.
+  colorChannel: 3,
+  animationChannel: 4,
+
+  // No canal de animação: brightness 0 e brightness 15.
+  ledOffVelocity: 18,
+  ledOnVelocity: 33
+};
+
+const MIDI = { access: null, input: null, output: null };
 
 // ============================================================
 // NÍVEIS — SEMENTES DE REGRAS

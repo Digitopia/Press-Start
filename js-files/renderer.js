@@ -1268,7 +1268,7 @@ const STANDBY_TITLE_WORD_GAP = 45;
 // mas a tinta não. O T ocupa a largura toda só na barra de cima
 // e por isso abre um buraco que as outras não abrem. Aperta-se
 // à mão, letra a letra, em pixels.
-const STANDBY_TITLE_KERNING = { T: -10 };
+const STANDBY_TITLE_KERNING = { T: -5 };
 
 function getStandbyKerning(letter) {
   return STANDBY_TITLE_KERNING[letter] ?? 0;

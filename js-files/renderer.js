@@ -574,7 +574,7 @@ function drawHeader() {
   textSize(FONT_SIZES.headerTitle);
   fill(235);
 
-  text("PRESS START", SCREEN_SIZE.width / 2, titleY);
+  text(GAME_TITLE, SCREEN_SIZE.width / 2, titleY);
 
 
   // ----------------------------------------------------------
@@ -1179,7 +1179,13 @@ function getLifeLostZoomScale() {
 // GAME OVER – OVERLAY
 //
 // Pisca 3 vezes e depois fica fixo.
+//
+// Composição: o meio do ecrã cai entre o título e as
+// estatísticas; a despedida fica afastada por baixo.
 // ============================================================
+
+const GAME_OVER_TITLE_TO_HUD = 106;
+const GAME_OVER_HUD_TO_THANKS = 104;
 
 function drawGameOverOverlay() {
   if (GAME.state !== "gameover") return;
@@ -1193,6 +1199,8 @@ function drawGameOverOverlay() {
 
     fillVisibleScreen(0, 200);
 
+    const titleY =
+      SCREEN_SIZE.height / 2 - GAME_OVER_TITLE_TO_HUD / 2;
 
     fill(255, 70, 70);
     textAlign(CENTER, CENTER);
@@ -1203,7 +1211,7 @@ function drawGameOverOverlay() {
     text(
       "GAME OVER",
       SCREEN_SIZE.width / 2 + random(-shakeAmount, shakeAmount),
-      SCREEN_SIZE.height / 2 + random(-shakeAmount, shakeAmount)
+      titleY + random(-shakeAmount, shakeAmount)
     );
 
 
@@ -1214,7 +1222,10 @@ function drawGameOverOverlay() {
     textAlign(CENTER, CENTER);
     textSize(FONT_SIZES.gameOverHud);
 
-    const hudY = SCREEN_SIZE.height - SCREEN_SIZE.height / 4;
+    const hudY =
+      SCREEN_SIZE.height / 2 + GAME_OVER_TITLE_TO_HUD / 2;
+
+    const thanksY = hudY + GAME_OVER_HUD_TO_THANKS;
 
     const items = [
       `LEVEL ${GAME.level}`,
@@ -1231,6 +1242,12 @@ function drawGameOverOverlay() {
       text(items[i], x, hudY);
     }
 
+    // Despedida, em branco e afastada, para não se ler como
+    // mais uma estatística.
+    textSize(FONT_SIZES.gameOverHud / 1.5);
+    fill(220);
+    text("THANKS FOR PLAYING", SCREEN_SIZE.width / 2, thanksY);
+
     pop();
   }
 }
@@ -1241,7 +1258,7 @@ function drawGameOverOverlay() {
 // Título branco com contorno nas cores das filas.
 // ============================================================
 
-const STANDBY_TITLE = "PRESS START";
+const STANDBY_TITLE = GAME_TITLE;
 
 // O espaço da fonte é estreito de mais para separar as duas
 // palavras, por isso vale por si em vez de letra + letterGap.
@@ -1281,6 +1298,121 @@ function getSpaceWidth() {
 const STANDBY_CYCLE_HOLD_FRAMES = 40;
 const STANDBY_CYCLE_GAP_FRAMES = 10;
 
+// ------------------------------------------------------------
+// COMPOSIÇÃO
+//
+// O prompt fica no centro do ecrã; o título sobe a partir dele
+// e o divisor desce, com o texto abaixo do divisor.
+// ------------------------------------------------------------
+
+const STANDBY_TITLE_TO_PROMPT = 95;
+const STANDBY_PROMPT_TO_DIVIDER = 96;
+const STANDBY_DIVIDER_TO_INFO = 56;
+
+// ------------------------------------------------------------
+// BLOCO DE TEXTO ALTERNANTE
+//
+// Duas ou três linhas por texto. Troca ao fim de
+// STANDBY_INFO_CYCLES piscadelas do prompt (cada uma ~1,7 s).
+// Não pisca: é para ser lido.
+// ------------------------------------------------------------
+
+const STANDBY_INFO_TEXTS = [
+  [
+    "DIGITAP is a rhythm game",
+    "developed by Ema Ferreira and Óscar Rodrigues",
+    "at Digitópia – Casa da Música"
+  ],
+  [
+    "Read the incoming rhythm, hit the matching coloured lane on time,",
+    "using the arcade controller in front of you,",
+    "and survive the ten increasingly demanding levels."
+  ]
+];
+
+const STANDBY_INFO_CYCLES = 3;
+const STANDBY_INFO_LEADING = 17;
+
+// ------------------------------------------------------------
+// DIVISOR — QUATRO BOLINHAS, UMA POR FILA
+// ------------------------------------------------------------
+
+const STANDBY_DIVIDER_UNIT = 1;      // lado do píxel da bolinha
+const STANDBY_DIVIDER_SPACING = 22;  // distância entre centros
+
+// Bolinha em pixel art: meia-largura de cada linha, de cima para
+// baixo, em píxeis da grelha. Oito linhas e dois degraus por
+// canto — com quatro linhas os cantos cortados davam uma cruz.
+const PIXEL_DOT_ROWS = [2, 3, 4, 4, 4, 4, 3, 2];
+
+// Desenhada como um contorno só, e não como linhas empilhadas:
+// o canvas é escalado para a janela, e aí as arestas entre
+// retângulos vizinhos caem em frações de píxel e aparecem como
+// fios claros.
+function drawPixelDot(x, y, unit, color) {
+  noStroke();
+  fill(...color);
+
+  const top = y - (PIXEL_DOT_ROWS.length / 2) * unit;
+
+  beginShape();
+
+  // Lado esquerdo, de cima para baixo.
+  for (let row = 0; row < PIXEL_DOT_ROWS.length; row++) {
+    const left = x - PIXEL_DOT_ROWS[row] * unit;
+
+    vertex(left, top + row * unit);
+    vertex(left, top + (row + 1) * unit);
+  }
+
+  // Lado direito, de baixo para cima.
+  for (let row = PIXEL_DOT_ROWS.length - 1; row >= 0; row--) {
+    const right = x + PIXEL_DOT_ROWS[row] * unit;
+
+    vertex(right, top + (row + 1) * unit);
+    vertex(right, top + row * unit);
+  }
+
+  endShape(CLOSE);
+}
+
+function drawStandbyDivider(y) {
+  const count = LANE_ORDER.length;
+
+  const startX =
+    SCREEN_SIZE.width / 2 - ((count - 1) * STANDBY_DIVIDER_SPACING) / 2;
+
+  for (let i = 0; i < count; i++) {
+    drawPixelDot(
+      startX + i * STANDBY_DIVIDER_SPACING,
+      y,
+      STANDBY_DIVIDER_UNIT,
+      LANES[LANE_ORDER[i]].color
+    );
+  }
+}
+
+function drawStandbyInfo(y, cycleLength) {
+  const index =
+    floor(frameCount / (cycleLength * STANDBY_INFO_CYCLES)) %
+    STANDBY_INFO_TEXTS.length;
+
+  const lines = STANDBY_INFO_TEXTS[index];
+
+  noStroke();
+  textAlign(CENTER, CENTER);
+  textSize(FONT_SIZES.standbyInfo);
+  fill(150);
+
+  for (let i = 0; i < lines.length; i++) {
+    text(
+      lines[i],
+      SCREEN_SIZE.width / 2,
+      y + i * STANDBY_INFO_LEADING
+    );
+  }
+}
+
 function drawStandbyOverlay() {
   if (GAME.state !== "standby") return;
 
@@ -1306,7 +1438,11 @@ function drawStandbyOverlay() {
   // Folga para o contorno, que textWidth() não mede.
   const letterGap = titleOutlineWeight * 1.5 + 5;
 
-  const titleY = SCREEN_SIZE.height / 2 - 30;
+  const promptY = SCREEN_SIZE.height / 2;
+  const dividerY = promptY + STANDBY_PROMPT_TO_DIVIDER;
+
+  const titleY = promptY - STANDBY_TITLE_TO_PROMPT;
+  const infoY = dividerY + STANDBY_DIVIDER_TO_INFO;
 
   let totalWidth = -letterGap;
   for (const letter of STANDBY_TITLE) {
@@ -1337,8 +1473,6 @@ function drawStandbyOverlay() {
   noStroke();
   textSize(FONT_SIZES.standbyPrompt);
 
-  const promptY = titleY + 70;
-
   if (inWhiteHold || inRedHold) {
     const accentColor = inRedHold ? [255, 70, 70] : [255, 255, 255];
 
@@ -1360,6 +1494,10 @@ function drawStandbyOverlay() {
     fill(...accentColor);
     text(STANDBY_PROMPT_SUFFIX, rightEdge, promptY);
   }
+
+  // Fora do piscar: o divisor e o texto ficam sempre visíveis.
+  drawStandbyDivider(dividerY);
+  drawStandbyInfo(infoY, cycleLength);
 
   pop();
 }

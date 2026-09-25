@@ -1,6 +1,10 @@
 // Espaço de desenho fixo, escalado para a janela em sketch.js.
 const SCREEN_SIZE = { width: 960, height: 540 };
 
+// Nome do jogo, no topo e no standby. Em maiúsculas: a fonte é
+// desenhada para caixa alta e o standby escreve-o letra a letra.
+const GAME_TITLE = "DIGITAP";
+
 // ============================================================
 // TAMANHOS DE TEXTO
 //
@@ -14,7 +18,7 @@ const FONT_SIZES = {
 
   // HUD do jogo (topo e rodapé)
   hudLabel: 7,      // legendas das barras do HUD (LEVEL / HEALTH)
-  headerTitle: 22,  // "PRESS START" no topo
+  headerTitle: 22,  // nome do jogo no topo
   judgement: 24,    // PERFECT / GOOD / OK / MISS
   footer: 10,       // "SCORE ... COMBO ..." no rodapé
 
@@ -29,8 +33,9 @@ const FONT_SIZES = {
   gameOverHud: 14,    // linha de info do game over
 
   // standby
-  standbyTitle: 60,   // título do ecrã de espera
+  standbyTitle: 72,   // título do ecrã de espera
   standbyPrompt: 16,  // "PRESS ANY BUTTON TO START"
+  standbyInfo: 9,    // bloco de texto alternante, por baixo
 
   // rotate (ecrã na vertical)
   rotateTitle: 28     // "ROTATE SCREEN"

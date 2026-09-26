@@ -97,11 +97,11 @@ const LEVEL_CONFIGS = [
   // ==========================================================
   // LEVEL 3 — O TEMPO FRACO SOZINHO
   //
-  // Entra [2] sem tempo forte antes, e o mínimo sobe a 6 notas.
+  // Entra [2], a colcheia sem o tempo forte antes dela.
   // Ainda uma só fila: o foco é todo no ritmo.
   //
   // Janelas: PERFECT 55 / GOOD 100 / OK 160 ms
-  // 6 notas em 3.8 s = 1.6 notas/segundo
+  // 4 notas em 3.8 s = 1.1 notas/segundo
   // ==========================================================
 
   createLevelRules({
@@ -115,7 +115,7 @@ const LEVEL_CONFIGS = [
       [0, 2]
     ],
     density: 0.5,
-    minNotesPerBar: 6,
+    minNotesPerBar: 4,
   }),
 
   // ==========================================================

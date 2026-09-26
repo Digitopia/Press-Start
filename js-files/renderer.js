@@ -1327,10 +1327,23 @@ const STANDBY_INFO_TEXTS = [
     "Read the incoming rhythm, hit the matching coloured lane on time,",
     "using the arcade controller in front of you,",
     "and survive the ten increasingly demanding levels."
+  ],
+  [
+    "DIGITAP é um jogo rítmico",
+    "desenvolvido por Ema Ferreira e Óscar Rodrigues",
+    "na Digitópia – Casa da Música"
+  ],
+  [
+    "Lê o ritmo, acerta na linha da cor correspondente no momento certo,",
+    "usando o comando arcade à tua frente,",
+    "e sobrevive aos dez níveis gradualmente mais exigentes."
+  ],
+  [
+    "Pressiona qualquer botão para começar."
   ]
 ];
 
-const STANDBY_INFO_CYCLES = 3;
+const STANDBY_INFO_CYCLES = 4;
 const STANDBY_INFO_LEADING = 17;
 
 // ------------------------------------------------------------

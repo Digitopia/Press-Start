@@ -277,11 +277,11 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 9 — MAIS DEPRESSA
+  // LEVEL 9 — MAIS DEPRESSA, E UM TEMPO À FRENTE
   //
-  // Sobe a 76 bpm, entra [0,1,3] e a densidade aperta. Continuam
-  // a ver-se dois tempos à frente, mas há menos tempo para
-  // decidir.
+  // Sobe a 76 bpm, entra [0,1,3] e a densidade aperta. A janela
+  // de visibilidade fecha para um tempo: sem margem para
+  // corrigir.
   //
   // Janelas: PERFECT 43 / GOOD 79 / OK 95 ms
   // 8 notas em 3.2 s = 2.5 notas/segundo
@@ -309,7 +309,7 @@ const LEVEL_CONFIGS = [
     showScorePath: false,
     showPreviewPath: false,
     showSubdivisionGrid: false,
-    visibleBeatsAhead: 2
+    visibleBeatsAhead: 1
   }),
 
   // ==========================================================
@@ -347,6 +347,6 @@ const LEVEL_CONFIGS = [
     showScorePath: false,
     showPreviewPath: false,
     showSubdivisionGrid: false,
-    visibleBeatsAhead: 2
+    visibleBeatsAhead: 1
   })
 ];

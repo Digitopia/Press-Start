@@ -109,8 +109,10 @@ function getBarDurationMs() {
 // ============================================================
 // ALVO DO NÍVEL
 //
-// Pontos de barsToClearLevel compassos todos em PERFECT.
-// Em GOOD também se passa, só demora mais uns compassos.
+// Pontos de barsToClearLevel compassos em PERFECT, contados ao
+// mínimo de notas do nível. Como a densidade gera mais notas do
+// que esse mínimo, na prática passa-se em menos compassos; em
+// GOOD demora mais.
 // ============================================================
 
 function getLevelTargetScore(level) {

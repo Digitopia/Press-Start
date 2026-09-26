@@ -79,9 +79,10 @@ function updateGame() {
 // tocado, porque esse compasso vai ser deitado fora.
 //
 // A antecipação é a mínima que fecha as duas fugas, para os
-// pontos da última nota ainda contarem: ela está a uma
-// subdivisão da fronteira (250 ms no nível 1, 178 ms no 10) e a
-// decisão cai depois disso.
+// pontos da última nota do compasso ainda contarem. O caso
+// apertado são os níveis com rajadas, onde a última nota pode
+// cair a uma subdivisão da fronteira (~197 a 238 ms); nos
+// primeiros níveis está a um tempo inteiro.
 // ============================================================
 
 // Margem para a frame da decisão chegar antes do agendamento.

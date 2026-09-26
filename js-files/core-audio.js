@@ -21,23 +21,12 @@ function ensureAudioContext() {
 }
 
 // ============================================================
-// playBeep()     imediato, para ações do jogador
-// scheduleBeep() instante exato, para o relógio musical
-// ============================================================
-
-function playBeep(frequency, durationMs, volume = 0.25) {
-  if (!audioCtx) return null;
-
-  return scheduleBeep(
-    frequency,
-    durationMs,
-    volume,
-    audioCtx.currentTime + SFX_LOOKAHEAD_SECONDS
-  );
-}
-
+// scheduleBeep() — beep simples num instante exato, para o
+// relógio musical: metrónomo e contagem inicial.
+//
 // destination omitido = direto à saída. Passar um gain próprio
 // permite calar beeps já agendados (ex.: metrónomo).
+// ============================================================
 function scheduleBeep(frequency, durationMs, volume, startTime, destination) {
   if (!audioCtx) return null;
 

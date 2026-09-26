@@ -27,9 +27,12 @@
 //
 // VISIBILIDADE (não muda as regras, só a informação dada)
 //   showSubdivisionGrid   riscos finos nas subdivisões do tempo
-//   showScorePath         linha no compasso ativo
+//   showScorePath         linha escura à frente da bola, no
+//                         compasso ativo. Atrás dela há sempre
+//                         rasto, com ou sem linha.
 //   showPreviewPath       linha no preview (defeito: = showScorePath)
-//   showScoreTrail        rasto atrás da bola quando não há linha
+//   showScoreTrail        rasto quando showScorePath é false; com
+//                         linha esta flag é ignorada
 //                         (defeito: = !showScorePath)
 //   trailFadeBeats        tempos até o rasto apagar (null = fica)
 //   visibleBeatsAhead     tempos visíveis à frente da bola

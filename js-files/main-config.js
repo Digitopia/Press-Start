@@ -43,7 +43,7 @@ const FONT_SIZES = {
 
 // ============================================================
 // CONFIGURAÇÃO PARTITURAS
-// margens para configuração com getScoreAreas() - renderer,js
+// margens para configuração com getScoreAreas() - renderer.js
 // ============================================================
 
 const SCORE_LAYOUT = {

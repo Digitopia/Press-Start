@@ -14,7 +14,7 @@
 // ============================================================
 
 const PLAYER_AUDIO = {
-    // Relativo a MUSIC.masterVolume.
+    // Volume do bus do jogador, independente do da música.
     masterVolume: 0.25,
 
     // Envio para a reverb, antes da saturação.
@@ -369,7 +369,7 @@ function scheduleMetallicBurst({
 // VOZES — PERCUSSÃO (ACERTO)
 //
 // Cada voz recebe (startTime, volume) já com fila e acento.
-// Curtas e secas: no nível 10 são 5.6 notas/s.
+// Curtas e secas: nos níveis densos são mais de 3 notas/s.
 // ============================================================
 
 const PERCUSSION_VOICES = {

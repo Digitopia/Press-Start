@@ -118,7 +118,7 @@ function draw() {
 
     drawCountdownOverlay();
     drawNextLevelOverlay();
-    drawLiveLostOverlay();
+    drawLifeLostOverlay();
     drawGameOverOverlay();
   }
 

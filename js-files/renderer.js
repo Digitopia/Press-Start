@@ -894,6 +894,9 @@ const JUDGEMENT_COLORS = { PERFECT: [0, 255, 120], GOOD: [255, 220, 40], OK: [20
 function drawJudgement() {
   if (GAME.judgementTimer <= 0) return;
 
+  push();
+
+  noStroke();
   textAlign(CENTER, CENTER);
   textSize(FONT_SIZES.judgement);
 
@@ -901,6 +904,7 @@ function drawJudgement() {
 
   text(GAME.lastJudgement, SCREEN_SIZE.width / 2, SCREEN_SIZE.height - 70);
 
+  pop();
 }
 
 // ============================================================
@@ -1104,7 +1108,7 @@ function drawNextLevelOverlay() {
 // ============================================================
 
 
-function drawLiveLostOverlay() {
+function drawLifeLostOverlay() {
   if (GAME.state !== "lifelost") return;
 
   const config = getCurrentLevelConfig();
@@ -1260,10 +1264,6 @@ function drawGameOverOverlay() {
 
 const STANDBY_TITLE = GAME_TITLE;
 
-// O espaço da fonte é estreito de mais para separar as duas
-// palavras, por isso vale por si em vez de letra + letterGap.
-const STANDBY_TITLE_WORD_GAP = 45;
-
 // Espaçamento entre letras, a somar à folga do contorno.
 const STANDBY_TITLE_LETTER_SPACING = 12;
 
@@ -1278,13 +1278,11 @@ function getStandbyKerning(letter) {
 }
 
 function getStandbyLetterAdvance(letter, letterGap) {
-  return letter === " "
-    ? STANDBY_TITLE_WORD_GAP
-    : textWidth(letter) + letterGap;
+  return textWidth(letter) + letterGap;
 }
 
-// "PRESS" e "START" mudam de cor. Espaços feitos em pixels
-// (o espaço na string não renderizava).
+// "PRESS" e "START" mudam de cor, por isso são desenhados à
+// parte do meio da frase.
 const STANDBY_PROMPT_PREFIX = "PRESS";
 const STANDBY_PROMPT_MIDDLE = "ANY BUTTON TO";
 const STANDBY_PROMPT_SUFFIX = "START";
@@ -1315,7 +1313,8 @@ const STANDBY_DIVIDER_TO_INFO = 56;
 // ------------------------------------------------------------
 // BLOCO DE TEXTO ALTERNANTE
 //
-// Duas ou três linhas por texto. Troca ao fim de
+// Cada texto é uma lista de linhas, quantas forem precisas, e a
+// rotação passa por todos por ordem. Troca ao fim de
 // STANDBY_INFO_CYCLES piscadelas do prompt (cada uma ~1,7 s).
 // Não pisca: é para ser lido.
 // ------------------------------------------------------------

@@ -6,6 +6,10 @@ const COUNTDOWN_CLICKS = {
   session: null
 };
 
+// Os beeps da contagem soam sozinhos, com a música parada, por
+// isso ficam um pouco abaixo do metrónomo.
+const COUNTDOWN_CLICK_VOLUME = 0.2;
+
 function updateGame() {
 
   // O jogo já foi reposto; só se espera voltar à horizontal.
@@ -471,7 +475,7 @@ function scheduleCountdownClicks() {
     const source = scheduleBeep(
       beat === 0 ? 700 : 500,
       50,
-      0.12,
+      COUNTDOWN_CLICK_VOLUME,
       GAME.countdownStartAudioTime + beat * beatDurationSeconds,
       session.gain
     );

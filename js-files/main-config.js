@@ -139,8 +139,8 @@ function createHitWindows({
 
 const METRONOME = {
   // Tempo 1 mais alto e agudo, marca o início do compasso.
-  downbeat: { frequency: 520, durationMs: 35, volume: 0.14 },
-  offbeat: { frequency: 440, durationMs: 30, volume: 0.08 },
+  downbeat: { frequency: 520, durationMs: 35, volume: 0.26 },
+  offbeat: { frequency: 440, durationMs: 30, volume: 0.16 },
 
   // 1 = sempre mudo; acima do nº de níveis = nunca desaparece.
   silentFromLevel: 10

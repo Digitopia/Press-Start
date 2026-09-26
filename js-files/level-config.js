@@ -177,10 +177,10 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 6 — O COMPASSO ENCHE
+  // LEVEL 6 — O COMPASSO ENCHE, E A LINHA DESAPARECE
   //
-  // Entra [0,3] e o mínimo sobe a 8 notas. Mesmo bpm do 5: o
-  // degrau é só a densidade. A linha ainda cá está — sai no 7.
+  // Entra [0,3] e o mínimo sobe a 8 notas. Sai a linha, que
+  // ajudava a antecipar o salto da bola; atrás fica o rasto.
   //
   // Janelas: PERFECT 50 / GOOD 91 / OK 109 ms
   // 8 notas em 3.6 s = 2.2 notas/segundo
@@ -203,13 +203,16 @@ const LEVEL_CONFIGS = [
     density: 0.6,
     minNotesPerBar: 8,
     avoidConsecutiveRepeat: true,
+
+    showScorePath: false,
+    showPreviewPath: false
   }),
 
   // ==========================================================
-  // LEVEL 7 — QUARTA FILA, SEM LINHA
+  // LEVEL 7 — QUARTA FILA, SEM GRELHA
   //
-  // Entra a quarta fila, e saem a linha e a grelha de
-  // subdivisões: à frente da bola deixa de haver informação.
+  // Entra a quarta fila e sai a grelha de subdivisões: deixa de
+  // haver qualquer referência visual dentro do tempo.
   //
   // Janelas: PERFECT 47 / GOOD 86 / OK 103 ms
   // 8 notas em 3.4 s = 2.3 notas/segundo

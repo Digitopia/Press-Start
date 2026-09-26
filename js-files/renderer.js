@@ -1264,6 +1264,9 @@ const STANDBY_TITLE = GAME_TITLE;
 // palavras, por isso vale por si em vez de letra + letterGap.
 const STANDBY_TITLE_WORD_GAP = 45;
 
+// Espaçamento entre letras, a somar à folga do contorno.
+const STANDBY_TITLE_LETTER_SPACING = 12;
+
 // A fonte é monoespaçada: o avanço é igual para todas as letras,
 // mas a tinta não. O T ocupa a largura toda só na barra de cima
 // e por isso abre um buraco que as outras não abrem. Aperta-se
@@ -1448,8 +1451,10 @@ function drawStandbyOverlay() {
   const titleOutlineWeight = 6;
   strokeWeight(titleOutlineWeight);
 
-  // Folga para o contorno, que textWidth() não mede.
-  const letterGap = titleOutlineWeight * 1.5 + 5;
+  // Folga para o contorno, que textWidth() não mede, mais o
+  // espaçamento que se quer ver.
+  const letterGap =
+    titleOutlineWeight * 1.5 + STANDBY_TITLE_LETTER_SPACING;
 
   const promptY = SCREEN_SIZE.height / 2;
   const dividerY = promptY + STANDBY_PROMPT_TO_DIVIDER;

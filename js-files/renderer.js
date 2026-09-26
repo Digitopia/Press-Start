@@ -1191,6 +1191,36 @@ function getLifeLostZoomScale() {
 const GAME_OVER_TITLE_TO_HUD = 106;
 const GAME_OVER_HUD_TO_THANKS = 104;
 
+// ------------------------------------------------------------
+// DESPEDIDA ALTERNANTE
+//
+// Como o bloco do standby: cada entrada é uma lista de linhas e
+// a rotação passa por todas por ordem. Aqui o tempo conta-se do
+// início do game over, para a ordem ser sempre a mesma.
+//
+// Cada texto fica GAME_OVER_SIGN_OFF_FRAMES, e o ecrã dura
+// GAME_OVER_EXIT.displayFrames: a 180 contra 480, os dois textos
+// passam uma vez e o primeiro volta a aparecer no fim.
+// ------------------------------------------------------------
+
+const GAME_OVER_SIGN_OFFS = [
+  ["THANKS FOR PLAYING!"],
+  ["OBRIGADO POR JOGARES!"]
+];
+
+const GAME_OVER_SIGN_OFF_FRAMES = 180;
+const GAME_OVER_SIGN_OFF_LEADING = 18;
+
+function getGameOverSignOff() {
+  const elapsedFrames = frameCount - GAME.gameOverStartFrame;
+
+  const index =
+    floor(elapsedFrames / GAME_OVER_SIGN_OFF_FRAMES) %
+    GAME_OVER_SIGN_OFFS.length;
+
+  return GAME_OVER_SIGN_OFFS[index];
+}
+
 function drawGameOverOverlay() {
   if (GAME.state !== "gameover") return;
 
@@ -1250,7 +1280,16 @@ function drawGameOverOverlay() {
     // mais uma estatística.
     textSize(FONT_SIZES.gameOverHud / 1.5);
     fill(220);
-    text("THANKS FOR PLAYING", SCREEN_SIZE.width / 2, thanksY);
+
+    const signOff = getGameOverSignOff();
+
+    for (let i = 0; i < signOff.length; i++) {
+      text(
+        signOff[i],
+        SCREEN_SIZE.width / 2,
+        thanksY + i * GAME_OVER_SIGN_OFF_LEADING
+      );
+    }
 
     pop();
   }
@@ -1341,7 +1380,9 @@ const STANDBY_INFO_TEXTS = [
     "e sobrevive aos dez níveis gradualmente mais exigentes."
   ],
   [
-    "Pressiona qualquer botão para começar."
+    "",
+    "Pressiona qualquer botão para começar.",
+    ""
   ]
 ];
 

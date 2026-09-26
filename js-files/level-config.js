@@ -54,7 +54,28 @@ const LEVEL_CONFIGS = [
   // ==========================================================
   // LEVEL 1 — UMA SÓ FILA
   //
-  // Aprender QUANDO bater.
+  // Aprender QUANDO bater: só semínimas, sempre no tempo.
+  //
+  // Janelas: PERFECT 55 / GOOD 100 / OK 160 ms
+  // 3 notas em 4.0 s = 0.8 notas/segundo
+  // ==========================================================
+
+  createLevelRules({
+    bpm: 60,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 1,
+    allowedRhythms: [
+      [0]     // semínima
+    ],
+    density: 0.3,
+    minNotesPerBar: 3
+  }),
+
+  // ==========================================================
+  // LEVEL 2 — O CONTRATEMPO
+  //
+  // Ainda uma só fila. Novidade: a célula [0,2], duas colcheias.
   //
   // Janelas: PERFECT 55 / GOOD 100 / OK 160 ms
   // 4 notas em 4.0 s = 1.0 nota/segundo
@@ -66,44 +87,43 @@ const LEVEL_CONFIGS = [
     subdivisionsPerBeat: 4,
     laneCount: 1,
     allowedRhythms: [
-      [0],     // semínima
-      [2]      // colcheia no contratempo
-    ],
-    density: 0.3,
-    minNotesPerBar: 4,
-
-    // Tempo 1 vazio: só cabem três notas.
-    introMinNotesPerBar: 3
-  }),
-
-  // ==========================================================
-  // LEVEL 2 — DUAS FILAS
-  //
-  // Novidade: escolher a fila, e a célula [0,2].
-  //
-  // Janelas: PERFECT 55 / GOOD 100 / OK 160 ms
-  // 4 notas em 4.0 s = 1.0 nota/segundo
-  // ==========================================================
-
-  createLevelRules({
-    bpm: 60,
-    beatsPerBar: 4,
-    subdivisionsPerBeat: 4,
-    laneCount: 2,
-    allowedRhythms: [
       [0],
-      [0, 2],
-      [2]
+      [0, 2]
     ],
     density: 0.4,
     minNotesPerBar: 4
   }),
 
   // ==========================================================
-  // LEVEL 3 — O SALTO DE PRECISÃO
+  // LEVEL 3 — O TEMPO FRACO SOZINHO
   //
-  // Entra [2,3], duas notas coladas: o maior salto de precisão.
-  // Duas filas sem repetição alternam sempre, foco no ritmo.
+  // Entra [2] sem tempo forte antes, e o mínimo sobe a 6 notas.
+  // Ainda uma só fila: o foco é todo no ritmo.
+  //
+  // Janelas: PERFECT 55 / GOOD 100 / OK 160 ms
+  // 6 notas em 3.8 s = 1.6 notas/segundo
+  // ==========================================================
+
+  createLevelRules({
+    bpm: 63,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 1,
+    allowedRhythms: [
+      [0],
+      [2],
+      [0, 2]
+    ],
+    density: 0.5,
+    minNotesPerBar: 6,
+  }),
+
+  // ==========================================================
+  // LEVEL 4 — SEGUNDA FILA E A RAJADA
+  //
+  // Entra a segunda fila e [0,1,2,3], o tempo cheio. É o maior
+  // salto de precisão do jogo: com notas a uma subdivisão de
+  // distância, a janela OK cai de 160 para 114 ms.
   //
   // Janelas: PERFECT 52 / GOOD 95 / OK 114 ms
   // 6 notas em 3.8 s = 1.6 notas/segundo
@@ -118,7 +138,7 @@ const LEVEL_CONFIGS = [
       [0],
       [2],
       [0, 2],
-      [2, 3]
+      [0, 1, 2, 3]
     ],
     density: 0.5,
     minNotesPerBar: 6,
@@ -126,9 +146,10 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 4 — TRÊS FILAS
+  // LEVEL 5 — TERCEIRA FILA
   //
-  // Terceira fila. Sai [0,2], entra [0,3].
+  // Terceira fila, e as células soltas de duas e três notas:
+  // [2,3] e [0,2,3].
   //
   // Janelas: PERFECT 50 / GOOD 91 / OK 109 ms
   // 6 notas em 3.6 s = 1.7 notas/segundo
@@ -142,36 +163,10 @@ const LEVEL_CONFIGS = [
     allowedRhythms: [
       [0],
       [2],
-      [0, 3],
-      [2, 3]
-    ],
-    density: 0.5,
-    minNotesPerBar: 6,
-    avoidConsecutiveRepeat: true
-  }),
-
-  // ==========================================================
-  // LEVEL 5 — QUATRO FILAS, CÉLULAS DE TRÊS NOTAS
-  //
-  // Quarta fila e células de três notas: [0,2,3], [0,1,3].
-  //
-  // Janelas: PERFECT 47 / GOOD 86 / OK 103 ms
-  // 6 notas em 3.4 s = 1.8 notas/segundo
-  // ==========================================================
-
-  createLevelRules({
-    bpm: 66,
-    beatsPerBar: 4,
-    subdivisionsPerBeat: 4,
-    laneCount: 4,
-    allowedRhythms: [
-      [0],
-      [2],
-      [0, 3],
       [0, 2],
-      [2, 3],
+      [0, 1, 2, 3],
       [0, 2, 3],
-      [0, 1, 3]
+      [2, 3]
     ],
     density: 0.55,
     minNotesPerBar: 6,
@@ -179,10 +174,39 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 6 — O TEMPO CHEIO, E A LINHA DESAPARECE
+  // LEVEL 6 — O COMPASSO ENCHE
   //
-  // Entra [0,1,2,3] (rajada numa cor). Sai a linha, que
-  // ajudava a antecipar o salto da bola.
+  // Entra [0,3] e o mínimo sobe a 8 notas. Mesmo bpm do 5: o
+  // degrau é só a densidade. A linha ainda cá está — sai no 7.
+  //
+  // Janelas: PERFECT 50 / GOOD 91 / OK 109 ms
+  // 8 notas em 3.6 s = 2.2 notas/segundo
+  // ==========================================================
+
+  createLevelRules({
+    bpm: 66,
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    laneCount: 3,
+    allowedRhythms: [
+      [0],
+      [2],
+      [0, 2],
+      [0, 1, 2, 3],
+      [0, 2, 3],
+      [2, 3],
+      [0, 3]
+    ],
+    density: 0.6,
+    minNotesPerBar: 8,
+    avoidConsecutiveRepeat: true,
+  }),
+
+  // ==========================================================
+  // LEVEL 7 — QUARTA FILA, SEM LINHA
+  //
+  // Entra a quarta fila, e saem a linha e a grelha de
+  // subdivisões: à frente da bola deixa de haver informação.
   //
   // Janelas: PERFECT 47 / GOOD 86 / OK 103 ms
   // 8 notas em 3.4 s = 2.3 notas/segundo
@@ -197,27 +221,29 @@ const LEVEL_CONFIGS = [
       [0],
       [2],
       [0, 2],
-      [2, 3],
-      [0, 1, 3],
+      [0, 1, 2, 3],
       [0, 2, 3],
-      [0, 1, 2, 3]
+      [2, 3],
+      [0, 3]
     ],
-    density: 0.6,
+    density: 0.7,
     minNotesPerBar: 8,
     avoidConsecutiveRepeat: true,
 
     showScorePath: false,
-    showPreviewPath: false
+    showPreviewPath: false,
+    showSubdivisionGrid: false
   }),
 
   // ==========================================================
-  // LEVEL 7 — A CÉLULA PARTE-SE
+  // LEVEL 8 — DOIS TEMPOS À FRENTE
   //
-  // "split": a célula parte-se em dois blocos de cor.
-  // Mesmo bpm do 6; o degrau é só a mudança de fila.
+  // As notas só aparecem a dois tempos: passa a ser reação.
+  // Mesmas regras do 7 — o degrau é só a antecipação que se
+  // tira. A partir daqui não é suposto ganhar-se.
   //
   // Janelas: PERFECT 47 / GOOD 86 / OK 103 ms
-  // 10 notas em 3.4 s = 2.9 notas/segundo
+  // 8 notas em 3.4 s = 2.3 notas/segundo
   // ==========================================================
 
   createLevelRules({
@@ -229,30 +255,30 @@ const LEVEL_CONFIGS = [
       [0],
       [2],
       [0, 2],
-      [2, 3],
-      [0, 1, 3],
+      [0, 1, 2, 3],
       [0, 2, 3],
-      [0, 1, 2, 3]
+      [2, 3],
+      [0, 3]
     ],
     density: 0.7,
-    minNotesPerBar: 10,
+    minNotesPerBar: 8,
     avoidConsecutiveRepeat: true,
-    laneChangesWithinCell: "split",
 
     showScorePath: false,
     showPreviewPath: false,
-    showSubdivisionGrid: false
+    showSubdivisionGrid: false,
+    visibleBeatsAhead: 2
   }),
 
   // ==========================================================
-  // LEVEL 8 — DOIS TEMPOS À FRENTE
+  // LEVEL 9 — MAIS DEPRESSA
   //
-  // Notas só visíveis a dois tempos: passa a ser reação.
-  // Entra [1,3] (sem tempo forte) e "free" (fila por nota).
-  // A partir daqui não é suposto ganhar-se.
+  // Sobe a 76 bpm, entra [0,1,3] e a densidade aperta. Continuam
+  // a ver-se dois tempos à frente, mas há menos tempo para
+  // decidir.
   //
   // Janelas: PERFECT 43 / GOOD 79 / OK 95 ms
-  // 12 notas em 3.2 s = 3.8 notas/segundo
+  // 8 notas em 3.2 s = 2.5 notas/segundo
   // ==========================================================
 
   createLevelRules({
@@ -264,16 +290,15 @@ const LEVEL_CONFIGS = [
       [0],
       [2],
       [0, 2],
-      [1, 3],
-      [2, 3],
-      [0, 1, 3],
+      [0, 1, 2, 3],
       [0, 2, 3],
-      [0, 1, 2, 3]
+      [2, 3],
+      [0, 3],
+      [0, 1, 3]
     ],
     density: 0.8,
-    minNotesPerBar: 12,
+    minNotesPerBar: 8,
     avoidConsecutiveRepeat: true,
-    laneChangesWithinCell: "free",
 
     showScorePath: false,
     showPreviewPath: false,
@@ -282,52 +307,18 @@ const LEVEL_CONFIGS = [
   }),
 
   // ==========================================================
-  // LEVEL 9 — UM TEMPO À FRENTE
-  //
-  // Reação a 4 escolhas ~350–450 ms: sem margem para corrigir.
-  //
-  // Janelas: PERFECT 41 / GOOD 75 / OK 90 ms
-  // 14 notas em 3.0 s = 4.7 notas/segundo
-  // ==========================================================
-
-  createLevelRules({
-    bpm: 80,
-    beatsPerBar: 4,
-    subdivisionsPerBeat: 4,
-    laneCount: 4,
-    allowedRhythms: [
-      [0],
-      [2],
-      [0, 2],
-      [1, 3],
-      [2, 3],
-      [0, 1, 3],
-      [0, 2, 3],
-      [0, 1, 2, 3]
-    ],
-    density: 0.9,
-    minNotesPerBar: 14,
-    avoidConsecutiveRepeat: true,
-    laneChangesWithinCell: "free",
-
-    showScorePath: false,
-    showPreviewPath: false,
-    showSubdivisionGrid: false,
-    visibleBeatsAhead: 1
-  }),
-
-  // ==========================================================
   // LEVEL 10 — SATURAÇÃO
   //
-  // Densidade máxima (16 notas). Sai também o rasto.
+  // Densidade quase máxima, mínimo de 10 notas, e a cor a mudar
+  // dentro da célula ("free"): cada nota pode cair noutra fila.
   // É suposto ver-se até onde se vai.
   //
-  // Janelas: PERFECT 39 / GOOD 71 / OK 86 ms
-  // 16 notas em 2.9 s = 5.6 notas/segundo
+  // Janelas: PERFECT 43 / GOOD 79 / OK 95 ms
+  // 10 notas em 3.2 s = 3.2 notas/segundo
   // ==========================================================
 
   createLevelRules({
-    bpm: 84,
+    bpm: 76,
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
     laneCount: 4,
@@ -335,17 +326,14 @@ const LEVEL_CONFIGS = [
       [0],
       [2],
       [0, 2],
-      [1, 3],
-      [2, 3],
-      [0, 1, 3],
+      [0, 1, 2, 3],
       [0, 2, 3],
-      [0, 1, 2, 3]
+      [2, 3],
+      [0, 3],
+      [0, 1, 3]
     ],
-    density: 1.0,
-    minNotesPerBar: 16,
-
-    // O proporcional daria 12 (máximo), sempre saturado.
-    introMinNotesPerBar: 10,
+    density: 0.9,
+    minNotesPerBar: 10,
 
     avoidConsecutiveRepeat: true,
     laneChangesWithinCell: "free",
@@ -353,7 +341,6 @@ const LEVEL_CONFIGS = [
     showScorePath: false,
     showPreviewPath: false,
     showSubdivisionGrid: false,
-    showScoreTrail: false, // tira o rasto da bola
-    visibleBeatsAhead: 1
+    visibleBeatsAhead: 2
   })
 ];

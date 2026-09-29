@@ -21,6 +21,8 @@ async function setup() {
   resetGame();
 
   initMIDI();
+
+  noCursor();
 }
 
 function windowResized() {

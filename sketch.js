@@ -22,7 +22,7 @@ async function setup() {
 
   initMIDI();
 
-  // noCursor();
+  noCursor();
 }
 
 function windowResized() {

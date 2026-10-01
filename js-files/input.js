@@ -23,6 +23,7 @@ function setupMIDIDevices() {
 
   MIDI.input = null;
   MIDI.output = null;
+  MIDI.lightOutput = null;
 
   for (const input of MIDI.access.inputs.values()) {
     console.log("MIDI INPUT:", input.name);
@@ -40,6 +41,11 @@ function setupMIDIDevices() {
     if (output.name?.toLowerCase().includes(MIDI_SPECTRA.deviceName)) {
       MIDI.output = output;
       console.log("MIDI Fighter LEDs ligados.");
+    }
+
+    if (output.name?.toLowerCase().includes(MIDI_LIGHTS.deviceName)) {
+      MIDI.lightOutput = output;
+      console.log("Luzes (IAC) ligadas.");
     }
   }
 
@@ -121,6 +127,55 @@ function syncSpectraLaneColors() {
       setSpectraPadColor(note, lane);
       setSpectraPadPressed(note, false);
     }
+  }
+}
+
+// ============================================================
+// MIDI OUT — LUZES DMX (IAC DRIVER)
+//
+// Cada fila e o miss são uma nota; a cor é escolhida no QLC+.
+// Note on acende, note off apaga — conforme MIDI_LIGHTS,
+// quando o texto some ou no próximo acerto/falha.
+// ============================================================
+
+let lightOffTimeout = null;
+let litLightNote = null;
+
+function sendLightNote(note, isOn) {
+  if (!MIDI.lightOutput) return;
+
+  const command = isOn ? 0x90 : 0x80;
+  const status = command | ((MIDI_LIGHTS.channel - 1) & 0x0f);
+
+  try {
+    MIDI.lightOutput.send([status, note, isOn ? 127 : 0]);
+  } catch (error) {
+    console.error("Erro ao enviar MIDI para as luzes:", error);
+    return;
+  }
+
+  console.log(`DMX OUT | ${isOn ? "ACENDE" : "APAGA"} | NOTA ${note}`);
+}
+
+function turnOffJudgementLight() {
+  if (litLightNote === null) return;
+
+  sendLightNote(litLightNote, false);
+  litLightNote = null;
+}
+
+// key: a fila do acerto ou "miss".
+function sendJudgementLight(key, durationMs) {
+  const note = MIDI_LIGHTS.notes[key];
+
+  clearTimeout(lightOffTimeout);
+  turnOffJudgementLight();
+
+  sendLightNote(note, true);
+  litLightNote = note;
+
+  if (MIDI_LIGHTS.turnOffWithJudgement) {
+    lightOffTimeout = setTimeout(turnOffJudgementLight, durationMs);
   }
 }
 

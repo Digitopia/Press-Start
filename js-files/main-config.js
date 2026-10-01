@@ -407,7 +407,33 @@ const MIDI_SPECTRA = {
   ledOnVelocity: 33
 };
 
-const MIDI = { access: null, input: null, output: null };
+// ============================================================
+// LUZES — IAC DRIVER → QLC+ → DMX
+//
+// Cada acerto envia a nota da sua fila; qualquer falha envia
+// a nota do miss. No QLC+ cada nota liga a uma cena.
+// ============================================================
+
+const MIDI_LIGHTS = {
+  deviceName: "bus 1",
+
+  channel: 1,
+
+  // Filas: dó, mi, sol, si (4.ª oitava). Miss: ré (5.ª).
+  notes: {
+    blue: 64,
+    green: 67,
+    yellow: 71,
+    red: 74,
+    miss: 60
+  },
+
+  // true: apaga quando o texto do julgamento some.
+  // false: fica na última cor até ao próximo acerto/falha.
+  turnOffWithJudgement: true
+};
+
+const MIDI = { access: null, input: null, output: null, lightOutput: null };
 
 // ============================================================
 // NÍVEIS — SEMENTES DE REGRAS

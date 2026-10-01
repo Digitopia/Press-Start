@@ -372,6 +372,8 @@ function registerSuccessfulHit(event, judgement) {
   GAME.lastJudgement = judgement;
   GAME.judgementTimer = 550;
 
+  sendJudgementLight(event.lane, GAME.judgementTimer);
+
   playPlayerHit(event.lane, judgement);
 }
 
@@ -390,6 +392,8 @@ function registerFailure(type, count = 1) {
 
   GAME.lastJudgement = failure.label;
   GAME.judgementTimer = failure.timer;
+
+  sendJudgementLight("miss", failure.timer);
 
   playPlayerFailure(type);
 
